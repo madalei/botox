@@ -1,5 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float
+from datetime import datetime
+from xmlrpc.client import DateTime
+
+from sqlalchemy import Column, Integer, String, Float, DateTime
 from infrastructure.adapters.database import Base
+
 
 class Order(Base):
     """
@@ -13,3 +17,10 @@ class Order(Base):
     quantity = Column(Float)
     total = Column(Float)
     currency = Column(String)
+
+    symbol = Column(String),
+    type = Column(String),
+    amount = Column(Float),
+    status = Column(String),
+    created_at = Column(DateTime, default=datetime.now()),
+    updated_at = Column(DateTime, default=datetime.now())

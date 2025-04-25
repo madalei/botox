@@ -13,9 +13,7 @@ def order_repository_singleton(db: Session = Depends(get_db)) -> OrderRepository
 
 @router.get("/orders")
 def get_orders(order_repository: OrderRepository = Depends(order_repository_singleton)):
-# def get_orders(db: Session = Depends(get_db)):
     """
     Récupère la liste des ordres en base de données.
     """
-    # return {"message": "Please return all orders"}
     return order_repository.get_all_orders()

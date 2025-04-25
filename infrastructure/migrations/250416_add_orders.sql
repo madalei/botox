@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS public.orders;
+
 CREATE TABLE public.orders (
 	id int NOT NULL,
 	order_uid varchar NOT NULL,

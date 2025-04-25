@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# PyCharm / IntelliJ
+.idea/
+
+# dotenv
+.env
+.env.*

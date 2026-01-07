@@ -5,16 +5,20 @@
 
 Botox is a FastAPI (web framework for APIs) Application running on a async-friendly Uvicorn server
 
-Botox use Poetry: a Python dependency management and packaging tool 
+To install dependencies
 
-`poetry install` to install dependencies
+``source venv/bin/activate``
 
-`poetry add somepackage` to add a lib
+``pip install --upgrade pip``
+
+``pip install -r requirements.txt``
 
 
-### Run the app
+### Run the backend app
 
-`poetry run python -m uvicorn main:app --reload`
+``cd backend``
+
+``uvicorn app.main:app --reload``
 
 Server should run at `http://127.0.0.1:8000/`
 
@@ -27,9 +31,10 @@ Botox use a PosgreSQL database
 
 How to have a postgresql db?
 
-``brew install postgresql``
+``brew install postgresql@14``
 
-``brew services start postgresql``
+``brew services start postgresql@14``
+`` psql --version ``
 
-Access the PostgreSQL command-line interface: 
+#### Access the PostgreSQL command-line interface: 
 ``psql postgres`` or `psql -U your_user -d postgres`

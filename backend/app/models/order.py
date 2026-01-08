@@ -4,8 +4,8 @@ from app.db.base import Base
 from datetime import datetime
 import uuid
 
-class Trade(Base):
-    __tablename__ = "trades"
+class Order(Base):
+    __tablename__ = "orders"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     bot_id: Mapped[str] = mapped_column(ForeignKey("bots.id", ondelete="CASCADE"))

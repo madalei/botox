@@ -6,7 +6,7 @@ CREATE TABLE bots (
     created_at TIMESTAMP DEFAULT now()
 );
 
-CREATE TABLE trades (
+CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     bot_id TEXT REFERENCES bots(id) ON DELETE CASCADE,
     symbol TEXT NOT NULL,

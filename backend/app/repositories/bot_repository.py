@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.core.models.bot import Bot
+from app.models.bot import Bot
 
 
 class BotRepository:

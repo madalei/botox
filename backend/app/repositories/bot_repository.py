@@ -12,9 +12,10 @@ class BotRepository:
 
     def create_bot(self, bot):
         db_bot = Bot(
-            id=bot.id,
-            strategy=bot.strategy,
-            params=bot.params
+            id=bot.bot_id,
+            strategy=bot.strategy.name,
+            params=bot.strategy.model_dump(),
+            status="R"
         )
         self.db.add(db_bot)
         self.db.commit()

@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+# --- system setup --- # ????
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1 .
+
+# --- working directory ---
+WORKDIR /app
+
+# --- install dependencies ---
+COPY backend/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# --- copy backend code ---
+COPY backend /app/backend
+
+# --- make imports work ---
+ENV PYTHONPATH=/app/backend
+
+# --- expose port ---
+EXPOSE 8000
+
+# --- run app ---
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

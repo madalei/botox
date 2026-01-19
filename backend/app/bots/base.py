@@ -22,14 +22,14 @@ class BaseBot:
           """
           Internal loop: run the strategy and execute trades if signals appear.
           """
-        logger.info("Bot started", extra={"bot_id": self.bot_id})
+        bot_logger.info("Bot started", extra={"bot_id": self.bot_id})
         while self.status == BotStatus.RUNNING:
             try:
                 # Generate signal/order from strategy
                 order = await self.strategy.generate_signals(exchange, self.capital)
 
                 if order:
-                    logger.info(
+                    bot_logger.info(
                         f"Signal detected: {order.side} {order.amount} {order.symbol} at {order.price}",
                         extra={"bot_id": self.bot_id}
                     )
@@ -41,7 +41,7 @@ class BaseBot:
                     # Call Binance API (pseudo)
                     # await binance_service.execute_order(order)
                 else:
-                    logger.info(f"No signal generated", extra={"bot_id": self.bot_id})
+                    bot_logger.info(f"No signal generated", extra={"bot_id": self.bot_id})
 
                 await asyncio.sleep(self.check_interval)
 
@@ -49,10 +49,10 @@ class BaseBot:
                 logger.info(f"Bot {self.bot_id} task cancelled", extra={"bot_id": self.bot_id})
                 break
             except Exception as e:
-                logger.error(f"Error in bot loop: {e}", extra={"bot_id": self.bot_id})
+                bot_logger.error(f"Error in bot loop: {e}", extra={"bot_id": self.bot_id})
                 await asyncio.sleep(self.check_interval)
 
-        logger.info(f"Bot {self.bot_id} stopped", extra={"bot_id": self.bot_id})
+        bot_logger.info(f"Bot {self.bot_id} stopped", extra={"bot_id": self.bot_id})
 
     async def start(self):
         self.status = BotStatus.RUNNING

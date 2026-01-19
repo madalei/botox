@@ -154,31 +154,4 @@ class MovingAverageCrossoverStrategy(BaseModel):
             return order
 
         return None
-
-    async def run(self, exchange, capital: float = 1000.0, check_interval: int = 900):
-        """
-        Runs the strategy continuously with a specified check interval.
-        By default, checks every 15 minutes (900 seconds).
-        """
-        print(f"Starting moving average crossover strategy for {self.symbol}...")
-        print(f"Timeframe: {self.timeframe}, Short MA: {self.short_window}, Long MA: {self.long_window}")
-
-        while True:
-            try:
-                # Generate signals
-                order = await self.generate_signals(exchange, capital)
-
-                # If an order is generated
-                if order:
-                    print(f"Signal detected: {order.side} {order.amount} {order.symbol} at {order.price}")
-                    # Here you could call your order service or repository
-                    # await order_service.create_order(order)
-                else:
-                    print(f"No signal generated at {datetime.now()}")
-
-                # Wait for the specified interval before the next check
-                await asyncio.sleep(check_interval)
-
-            except Exception as e:
-                print(f"Error in strategy execution: {e}")
-                await asyncio.sleep(check_interval)
+    

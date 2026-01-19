@@ -3,40 +3,35 @@ import pandas as pd  # convert OHLCV data (Open, High, Low, Close, Volume) into 
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
-from core.models.order import Order
+from pydantic import BaseModel, PrivateAttr
+
+from app.models.order import Order
 
 
-class MovingAverageCrossoverStrategy:
+class MovingAverageCrossoverStrategy(BaseModel):
     """
     A trading strategy based on moving average crossovers.
     Buy when the short moving average crosses above the long moving average.
     Sell when the short moving average crosses below the long moving average.
     """
 
-    def __init__(
-            self,
-            symbol: str = "BTC/USDT",
-            timeframe: str = "1h",
-            short_window: int = 20,
-            long_window: int = 50,
-            risk_per_trade: float = 0.01,  # 1% of capital per trade
-            stop_loss_pct: float = 0.02,  # 2% stop loss
-            take_profit_pct: float = 0.04,  # 4% take profit
-    ):
-        self.symbol = symbol
-        self.timeframe = timeframe
-        self.short_window = short_window
-        self.long_window = long_window
-        self.risk_per_trade = risk_per_trade
-        self.stop_loss_pct = stop_loss_pct
-        self.take_profit_pct = take_profit_pct
+    # Parameters you want to store in JSONB
+    name: str = "MovingAVG-crossOver"
+    symbol: str = "BTC/USDT"
+    timeframe: str = "1h"
+    short_window: int = 20
+    long_window: int = 50
+    risk_per_trade: float = 0.01
+    stop_loss_pct: float = 0.02
+    take_profit_pct: float = 0.04
 
-        # Internal state of the strategy
-        self.is_position_open = False
-        self.entry_price = 0.0
-        self.position_size = 0.0
-        self.last_signal = None
-        self.last_check_time = None
+    # Internal runtime state (not stored in DB)
+    _is_position_open: bool = PrivateAttr(default=False)
+    _entry_price: float = PrivateAttr(default=0.0)
+    _position_size: float = PrivateAttr(default=0.0)
+    _last_signal: Optional[str] = PrivateAttr(default=None)
+    _last_check_time: Optional[str] = PrivateAttr(default=None)
+
 
     async def get_historical_data(self, exchange, limit: int = 100) -> pd.DataFrame:
         """Retrieves historical data needed for the strategy."""

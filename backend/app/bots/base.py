@@ -20,7 +20,8 @@ class BaseBot:
 
     async def run(self, exchange, order_service=None):
         """
-        Internal loop: run the strategy and execute trades if signals appear.
+        Internal loop: run the strategy each "check_interval" times and execute trades if signals appear.
+        By default, checks every 15 minutes (900 seconds).
         """
         bot_logger.info("Bot started", extra={"bot_id": self.bot_id})
         while self.status == BotStatus.RUNNING:
@@ -51,9 +52,9 @@ class BaseBot:
 
         bot_logger.info(f"Bot {self.bot_id} stopped", extra={"bot_id": self.bot_id})
 
-    async def start(self, exchange, order_service=None):
-        self.status = BotStatus.RUNNING
-        self._task = asyncio.create_task(self.run(exchange, order_service))
+    # async def start(self, exchange, order_service=None):
+    #     self.status = BotStatus.RUNNING
+    #     self._task = asyncio.create_task(self.run(exchange, order_service))
 
     async def stop(self):
         self.status = BotStatus.STOPPED

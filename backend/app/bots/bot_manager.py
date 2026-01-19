@@ -1,6 +1,7 @@
 import asyncio
 from typing import Dict
-from app.bots.base import BaseBot
+from app.bots.base import BaseBot, BotStatus
+from app.repositories.bot_repository import BotRepository
 from app.services.logging import bot_logger
 
 class BotManager:
@@ -21,7 +22,9 @@ class BotManager:
 
     async def start_bot(self, bot_id: str):
         bot = self._get_bot(bot_id)
-        await bot.start(self.exchange, self.order_service)
+        bot.status = BotStatus.RUNNING
+        bot._task = asyncio.create_task(bot.run(self.exchange, self.order_service))
+
 
     # async def stop_bot(self, bot_id: str):
     #     bot = self._get_bot(bot_id)

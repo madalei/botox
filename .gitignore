@@ -12,4 +12,7 @@ build/
 
 # dotenv
 backend/.env
+
+.venv/
+
 .env.*

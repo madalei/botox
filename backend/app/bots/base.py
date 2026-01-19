@@ -1,5 +1,4 @@
-from app.services.logging import logger
-from app.bots.strategies.base import BaseStrategy
+from app.services.logging import bot_logger
 from enum import Enum
 import asyncio
 
@@ -14,14 +13,15 @@ class BaseBot:
         self.bot_id = bot_id
         self.strategy = strategy
         self.capital = capital
+        # Todo here maybe some other customisable params
         self.check_interval = check_interval  # seconds
         self.status = BotStatus.CREATED
         self._task: asyncio.Task | None = None
 
-    async def run(self):
-          """
-          Internal loop: run the strategy and execute trades if signals appear.
-          """
+    async def run(self, exchange, order_service=None):
+        """
+        Internal loop: run the strategy and execute trades if signals appear.
+        """
         bot_logger.info("Bot started", extra={"bot_id": self.bot_id})
         while self.status == BotStatus.RUNNING:
             try:
@@ -35,9 +35,9 @@ class BaseBot:
                     )
 
                     # Persist trade to DB if order_service is provided
-                    if order_service:
-                        await order_service.create_order(order)
+                    order_service.create_order(order)
 
+                    # Todo
                     # Call Binance API (pseudo)
                     # await binance_service.execute_order(order)
                 else:
@@ -45,18 +45,15 @@ class BaseBot:
 
                 await asyncio.sleep(self.check_interval)
 
-            except asyncio.CancelledError:
-                logger.info(f"Bot {self.bot_id} task cancelled", extra={"bot_id": self.bot_id})
-                break
             except Exception as e:
                 bot_logger.error(f"Error in bot loop: {e}", extra={"bot_id": self.bot_id})
                 await asyncio.sleep(self.check_interval)
 
         bot_logger.info(f"Bot {self.bot_id} stopped", extra={"bot_id": self.bot_id})
 
-    async def start(self):
+    async def start(self, exchange, order_service=None):
         self.status = BotStatus.RUNNING
-        self._task = asyncio.create_task(self.run())
+        self._task = asyncio.create_task(self.run(exchange, order_service))
 
     async def stop(self):
         self.status = BotStatus.STOPPED
@@ -65,4 +62,4 @@ class BaseBot:
             try:
                 await self._task
             except asyncio.CancelledError:
-                logger.info("Bot stopped", extra={"bot_id": self.bot_id})
+                bot_logger.info("Bot stopped", extra={"bot_id": self.bot_id})

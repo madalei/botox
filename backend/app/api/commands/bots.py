@@ -24,14 +24,15 @@ class StrategyParams(BaseModel):
     timeframe: str = Field( default="1h", description="Candlestick timeframe")
     short_window: int = Field( default=20,ge=1,description="Short moving average window")
     long_window: int = Field(default=50,ge=1,description="Long moving average window")
+    check_interval: int = Field(default=900,description="Time Interval between strategy execute")
     stop_loss_pct: float = Field(default=0.02,gt=0,le=1,description="Stop loss percentage (0–1)")
 
 @router.post("/bots")
 async def create_bots( strategy_params: StrategyParams,
-                 request: Request,
-                 bot_repository: BotRepository = Depends(bot_repository_singleton)):
+                       request: Request,
+                       bot_repository: BotRepository = Depends(bot_repository_singleton)):
     """
-    Add an bot to the database and register it
+    Create a bot, write it in the DB, register it to a pool of bots and run it
     """
 
     bot_logger.info(f"Entering POST /bots with params")
@@ -47,7 +48,7 @@ async def create_bots( strategy_params: StrategyParams,
     bot_id = f"BOT_{timestamp}"
 
     # Create a bot
-    bot = BaseBot(bot_id=bot_id, strategy=strategy)
+    bot = BaseBot(bot_id=bot_id, strategy=strategy, check_interval=strategy_params.check_interval)
 
     # Save to DB (sync operation)
     db_bot = bot_repository.create_bot(bot)

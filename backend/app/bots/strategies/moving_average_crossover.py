@@ -154,4 +154,3 @@ class MovingAverageCrossoverStrategy(BaseModel):
             return order
 
         return None
-    

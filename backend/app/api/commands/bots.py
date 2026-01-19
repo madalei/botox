@@ -27,7 +27,7 @@ class StrategyParams(BaseModel):
     stop_loss_pct: float = Field(default=0.02,gt=0,le=1,description="Stop loss percentage (0–1)")
 
 @router.post("/bots")
-def create_bots( strategy_params: StrategyParams,
+async def create_bots( strategy_params: StrategyParams,
                  request: Request,
                  bot_repository: BotRepository = Depends(bot_repository_singleton)):
     """
@@ -49,11 +49,17 @@ def create_bots( strategy_params: StrategyParams,
     # Create a bot
     bot = BaseBot(bot_id=bot_id, strategy=strategy)
 
+    # Save to DB (sync operation)
+    db_bot = bot_repository.create_bot(bot)
+
     # Register it
     bot_manager.register_bot(bot)
 
-    # Start it
-    bot_manager.start_bot(bot.bot_id)
+    # Start it (async)
+    await bot_manager.start_bot(bot.bot_id)
 
-    # Store it in Db
-    return bot_repository.create_bot(bot)
+    return {
+        "bot_id": db_bot.id,
+        "status": bot.status,
+        "created_at": db_bot.created_at
+    }

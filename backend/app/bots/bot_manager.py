@@ -36,16 +36,19 @@ class BotManager:
     #     await asyncio.sleep(1)
     #     await bot.start(self.exchange, self.order_service)
     #
-    # def list_bots(self):
-    #     return [
-    #         {
-    #             "bot_id": bot.bot_id,
-    #             "status": bot.status,
-    #             "strategy": bot.strategy.__class__.__name__,
-    #         }
-    #         for bot in self._bots.values()
-    #     ]
-    #
+
+
+    def list_running_bots(self):
+        return [
+            {
+                "bot_id": bot.bot_id,
+                "status": bot.status,
+                "strategy": bot.strategy.__class__.__name__,
+                "params": bot.strategy.model_dump(),  # only public fields
+            }
+            for bot in self._bots.values()
+        ]
+
     def _get_bot(self, bot_id: str):
         if bot_id not in self._bots:
             raise ValueError(f"Bot {bot_id} not found")

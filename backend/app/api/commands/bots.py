@@ -44,7 +44,7 @@ async def create_bots( strategy_params: StrategyParams,
     # Todo: make the strategy customisable from input param
     strategy = MovingAverageCrossoverStrategy(**strategy_params.model_dump())
 
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     bot_id = f"BOT_{timestamp}"
 
     # Create a bot

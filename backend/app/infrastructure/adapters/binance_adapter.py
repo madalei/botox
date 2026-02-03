@@ -9,6 +9,12 @@ class BinanceAdapter:
         })
         self.client.set_sandbox_mode(sandbox)
 
+    def milliseconds(self) -> int:
+        return self.client.milliseconds() # cctx.milliseconds
+
+    def parse_timeframe(self, timeframe: str) -> int:
+        return self.client.parse_timeframe(timeframe)
+
     # @param symbol
     #   "BTC/USDT" → trading Bitcoin against Tether
     #   "ETH/EUR" → trading Ethereum against euros
@@ -17,9 +23,9 @@ class BinanceAdapter:
         ticker = await self.client.fetch_ticker(symbol)
         return ticker["last"]
 
-    async def get_ohlcv(self, symbol: str, timeframe: str = "1m", limit: int = 30):
+    async def fetch_ohlcv(self, symbol: str, timeframe: str = "1m", limit: int = 30):
         """
-        Get OHLCV candels : [timestamp, open, high, low, close, volume]
+        Fetch OHLCV candels : [timestamp, open, high, low, close, volume]
         """
         return await self.client.fetch_ohlcv(
             symbol, timeframe=timeframe, limit=limit
@@ -30,4 +36,3 @@ class BinanceAdapter:
 
     async def close(self):
         await self.client.close()
-

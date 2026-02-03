@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, PrivateAttr
 
+from app.infrastructure.adapters.binance_adapter import BinanceAdapter
 from app.models.order import Order
 
 
@@ -33,7 +34,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
     _last_check_time: Optional[str] = PrivateAttr(default=None)
 
 
-    async def get_historical_data(self, exchange, limit: int = 100) -> pd.DataFrame:
+    async def get_historical_data(self, exchange: BinanceAdapter, limit: int = 100) -> pd.DataFrame:
         """Retrieves historical data needed for the strategy."""
         try:
             since = exchange.milliseconds() - (limit * exchange.parse_timeframe(self.timeframe) * 1000)
@@ -71,7 +72,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
         position_size = amount_to_risk / (current_price * self.stop_loss_pct)
         return position_size
 
-    async def generate_signals(self, exchange, capital: float = 1000.0) -> Optional[Dict]:
+    async def generate_signals(self, exchange: BinanceAdapter, capital: float = 1000.0) -> Optional[Dict]:
         """
         Analyzes data and generates trading signals.
         Returns an order to execute if a signal is detected.

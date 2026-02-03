@@ -24,7 +24,7 @@ class StrategyParams(BaseModel):
     timeframe: str = Field( default="1h", description="Candlestick timeframe")
     short_window: int = Field( default=20,ge=1,description="Short moving average window")
     long_window: int = Field(default=50,ge=1,description="Long moving average window")
-    check_interval: int = Field(default=900,description="Time Interval between strategy execute")
+    check_interval: int = Field(default=900,description="Time Interval in second, between strategy execute")
     stop_loss_pct: float = Field(default=0.02,gt=0,le=1,description="Stop loss percentage (0–1)")
 
 @router.post("/bots")
@@ -41,7 +41,7 @@ async def create_bots( strategy_params: StrategyParams,
     bot_manager: BotManager = request.app.state.bot_manager # singleton BotManager
 
     # Create strategy instance
-    # Todo could be part of the endpoint param after
+    # Todo: make the strategy customisable from input param
     strategy = MovingAverageCrossoverStrategy(**strategy_params.model_dump())
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -53,10 +53,8 @@ async def create_bots( strategy_params: StrategyParams,
     # Save to DB (sync operation)
     db_bot = bot_repository.create_bot(bot)
 
-    # Register it
+    # Register and Start it (async)
     bot_manager.register_bot(bot)
-
-    # Start it (async)
     await bot_manager.start_bot(bot.bot_id)
 
     return {
@@ -64,3 +62,4 @@ async def create_bots( strategy_params: StrategyParams,
         "status": bot.status,
         "created_at": db_bot.created_at
     }
+

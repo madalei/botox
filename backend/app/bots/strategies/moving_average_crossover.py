@@ -1,5 +1,5 @@
 import asyncio
-import pandas as pd  # convert OHLCV data (Open, High, Low, Close, Volume) into a pandas DataFrame
+import pandas as pandas  # convert OHLCV data (Open, High, Low, Close, Volume) into a pandas DataFrame
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -34,37 +34,59 @@ class MovingAverageCrossoverStrategy(BaseModel):
     _last_check_time: Optional[str] = PrivateAttr(default=None)
 
 
-    async def get_historical_data(self, exchange: BinanceAdapter, limit: int = 100) -> pd.DataFrame:
-        """Retrieves historical data needed for the strategy."""
+    async def get_historical_data(self, exchange: BinanceAdapter, limit: int = 250) -> pandas.DataFrame:
+        """
+        Return a DataFrame containing historical market data of OHLCV (Open, High, Low, Close, Volume) for the
+        configured trading symbol and timeframe.
+
+    limit : int, optional (default=100)
+        The maximum number of OHLCV candles to retrieve. The actual historical
+        coverage depends on the configured timeframe. For example, with a
+        timeframe of "1h" and limit=100, approximately 100 hours of historical
+        data (~4.2 days) will be fetched.
+        but 100 is not enought to get good statistic indicators, so better to use approximativelly 5* the long window
+        limit = max(200, self.long_window * 5)
+        This will make indicator more "mature" and steady
+    """
         try:
-            since = exchange.milliseconds() - (limit * exchange.parse_timeframe(self.timeframe) * 1000)
+            since = exchange.milliseconds() - (limit * exchange.parse_timeframe(self.timeframe) * 1000) # if timeframe = 1h, limit * timeframe = 100 * 1h = 100h = 4.2days
             ohlcv = await exchange.fetch_ohlcv(self.symbol, self.timeframe, since, limit)
 
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            return df
+            dataframe = pandas.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            dataframe['timestamp'] = pandas.to_datetime(dataframe['timestamp'], unit='ms')
+            return dataframe
         except Exception as e:
             print(f"Error retrieving historical data: {e}")
-            return pd.DataFrame()
+            return pandas.DataFrame()
 
-    def calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+    def calculate_indicators(self, dataframe: pandas.DataFrame) -> pandas.DataFrame:
         """Calculates technical indicators for the strategy."""
-        if len(df) < self.long_window:
-            return df
+        if len(dataframe) < self.long_window:
+            return dataframe
 
         # Calculate moving averages
-        df['short_ma'] = df['close'].rolling(window=self.short_window).mean()
-        df['long_ma'] = df['close'].rolling(window=self.long_window).mean()
+        # note: .rolling(n) -> Crée une fenetre glissante de n bougies
+        # À chaque ligne t, on regarde les N dernières valeurs de `close`
+        # On calcule ensuite la moyenne de ces N valeurs
+        dataframe['short_ma'] = dataframe['close'].rolling(window=self.short_window).mean()
+        dataframe['long_ma'] = dataframe['close'].rolling(window=self.long_window).mean()
 
         # Calculate signal
-        df['signal'] = 0
-        df.loc[df['short_ma'] > df['long_ma'], 'signal'] = 1
-        df.loc[df['short_ma'] < df['long_ma'], 'signal'] = -1
+        dataframe['signal'] = 0
+        # if short avg > long avg => price is increasing
+        # dataframe.loc[condition_lines, column] = x => assign value x to line that validate the condition
+        dataframe.loc[dataframe['short_ma'] > dataframe['long_ma'], 'signal'] = 1
+        dataframe.loc[dataframe['short_ma'] < dataframe['long_ma'], 'signal'] = -1
 
         # Detect crossovers (signal change)
-        df['crossover'] = df['signal'].diff().fillna(0)
+        # .diff: calc difference between 2 consecutive lines
+        # signal = [-1  -1   1   1]
+        # diff() = [ 0   0   2   0]
+        # +2 => buy signal
+        # -2 => sell signal
+        dataframe['crossover'] = dataframe['signal'].diff().fillna(0)
 
-        return df
+        return dataframe
 
     def calculate_position_size(self, capital: float, current_price: float) -> float:
         """Calculates position size based on capital and risk."""

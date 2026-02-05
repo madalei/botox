@@ -20,11 +20,31 @@ class MovingAverageCrossoverStrategy(BaseModel):
     name: str = "MovingAVG-crossOver"
     symbol: str = "BTC/USDT"
     timeframe: str = "1h"
-    short_window: int = 20
-    long_window: int = 50
+    short_window: int = 20 # avg of last 20 hours
+    long_window: int = 50  # avg of last 50 hours
     risk_per_trade: float = 0.01
     stop_loss_pct: float = 0.02
     take_profit_pct: float = 0.04
+
+    # Example of other values:
+    # -- Strategy --
+    # More aggressive (more trades) (/!\ faux signaux)
+    #   short_window = 9
+    #   long_window = 21
+    # Less trades
+    #   short_window = 50
+    #   long_window = 200
+    #
+    # -- Risk --
+    # Prudent:
+    #   risk_per_trade = 0.005   # 0.5%
+    #   stop_loss_pct  = 0.015   # 1.5%
+    #   take_profit_pct= 0.03    # 3%
+    # Agressif:
+    #   risk_per_trade = 0.02
+    #   stop_loss_pct = 0.025
+    #   take_profit_pct = 0.06
+
 
     # Internal runtime state (not stored in DB)
     _is_position_open: bool = PrivateAttr(default=False)

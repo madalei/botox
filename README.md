@@ -7,7 +7,11 @@ Botox is a FastAPI (web framework for APIs) Application running on a async-frien
 
 To install dependencies
 
-``source venv/bin/activate``
+Python 3.12 is required, not more for pytest at the moment
+
+``python -m venv venv``
+
+``source .venv/bin/activate``
 
 ``pip install --upgrade pip``
 

@@ -64,3 +64,6 @@ class BaseBot:
                 await self._task
             except asyncio.CancelledError:
                 bot_logger.info("Bot stopped", extra={"bot_id": self.bot_id})
+
+    def get_strategy_params(self):
+        pass

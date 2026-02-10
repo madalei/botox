@@ -120,7 +120,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
         Returns an order to execute if a signal is detected.
         """
         # Get enough historical data
-        history_df = await self.get_historical_data(exchange, limit=self.long_window + 10)
+        history_df = await self.get_historical_data(exchange, limit=self.long_window * 5)
         if history_df.empty:
             return None
 

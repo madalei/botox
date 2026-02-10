@@ -187,15 +187,14 @@ class MovingAverageCrossoverStrategy(BaseModel):
                 side=signal["type"],
                 amount=signal["amount"],
                 price=signal["price"],
-                status="NEW",
                 created_at=datetime.now(),
                 updated_at=datetime.now()
             )
 
             # If it's a buy, add stop loss and take profit
             if signal["type"] == "BUY":
-                order.stop_loss = signal["stop_loss"]
-                order.take_profit = signal["take_profit"]
+                order.stop_loss = signal.get("stop_loss")
+                order.take_profit = signal.get("take_profit")
 
             return order
 

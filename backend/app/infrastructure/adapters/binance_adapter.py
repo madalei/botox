@@ -23,12 +23,14 @@ class BinanceAdapter:
         ticker = await self.client.fetch_ticker(symbol)
         return ticker["last"]
 
-    async def fetch_ohlcv(self, symbol: str, timeframe: str = "1m", limit: int = 30):
+    async def fetch_ohlcv(self, symbol: str, timeframe: str = "1m", since: int | None = None, limit: int = 30):
         """
-        Fetch OHLCV candels : [timestamp, open, high, low, close, volume]
+        Fetch OHLCV candels and return: [timestamp, open, high, low, close, volume]
+        - since: timestamp in milliseconds, optional
+        - limit: number of candles
         """
         return await self.client.fetch_ohlcv(
-            symbol, timeframe=timeframe, limit=limit
+            symbol, timeframe=timeframe,since=since, limit=limit
         )
 
     async def place_limit_buy(self, symbol: str, amount: float, price: float):

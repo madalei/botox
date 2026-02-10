@@ -7,6 +7,7 @@ from pydantic import BaseModel, PrivateAttr
 
 from app.infrastructure.adapters.binance_adapter import BinanceAdapter
 from app.models.order import Order
+from app.services.logging import bot_logger
 
 
 class MovingAverageCrossoverStrategy(BaseModel):
@@ -144,6 +145,9 @@ class MovingAverageCrossoverStrategy(BaseModel):
         # Buy signal: short MA just crossed above long MA
         if last_crossover == 2:  # Upward crossing (from -1 to 1)
             if not self.is_position_open:
+            bot_logger.info(f"- Upward crossing - Short MA just crossed above long MA - should emit a BUY signal")
+            # If no trade is active
+            if not self._is_position_open:
                 self.position_size = self.calculate_position_size(capital, current_price)
                 self.entry_price = current_price
                 self.is_position_open = True

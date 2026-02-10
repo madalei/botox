@@ -128,9 +128,9 @@ class MovingAverageCrossoverStrategy(BaseModel):
         # Calculate indicators
         df = self.calculate_indicators(history_df)
 
-        # Check if there's enough data to generate a valid signal
-        if df['short_ma'].isna().sum() > 0 or df['long_ma'].isna().sum() > 0:
-            return None
+        # Ignore warmup
+        # Supprime les premières bougies où les MA ne sont pas encore calculables
+        df = df.iloc[self.long_window:]  # supprime les 49 premières lignes où long_ma est NaN sinon la prochaine ligne ne passe pas
 
         # Observe the last crossover
         last_row = df.iloc[-1]

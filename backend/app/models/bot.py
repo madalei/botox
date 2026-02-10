@@ -1,15 +1,15 @@
 from sqlalchemy import String, JSON, DateTime, func
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
 from app.infrastructure.adapters.database import Base
 
 class Bot(Base):
     __tablename__ = "bots"
 
-    id = Column(String, primary_key=True)
-    strategy = Column(String, index=True)
-    params = Column(JSON)
-    status = Column(String, index=True)
-    created_at = Column(
+    id: Mapped[str] = mapped_column(primary_key=True)
+    strategy: Mapped[str] = mapped_column(String, index=True)
+    params: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String, index=True)
+    created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.now()
+        server_default=func.now(),
     )

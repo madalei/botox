@@ -1,8 +1,8 @@
-import ccxt.async_support as ccxt
+import ccxt.async_support as ccxt_async
 
 class BinanceAdapter:
     def __init__(self, api_key: str, secret: str, sandbox: bool = True):
-        self.client = ccxt.binance({
+        self.client = ccxt_async.binance({
             "apiKey": api_key,
             "secret": secret,
             "enableRateLimit": True,

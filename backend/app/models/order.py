@@ -13,11 +13,9 @@ class Order(Base):
     side: Mapped[str] = mapped_column(String)
     price: Mapped[float] = mapped_column(Numeric)
     amount: Mapped[float] = mapped_column(Numeric, nullable=False)
-    quantity: Mapped[float] = mapped_column(Numeric)
     stop_loss: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     take_profit: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
     executed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

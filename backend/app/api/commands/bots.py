@@ -45,6 +45,9 @@ async def create_bots( strategy_params: StrategyParams,
     strategy = MovingAverageCrossoverStrategy(**strategy_params.model_dump())
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Todo generate a more user-friendly bot_id (e.g. "BTCUSDT_1h_20240601_120000")
+    #   and move it to bot constructor
     bot_id = f"BOT_{timestamp}"
 
     # Create a bot

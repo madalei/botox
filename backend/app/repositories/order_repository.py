@@ -16,13 +16,10 @@ class OrderRepository:
         self.db = db or SessionLocal()
 
     def create_order(self, order):
-        db_order = Order(
-            id=order.id
-        )
-        self.db.add(db_order)
+        self.db.add(order)
         self.db.commit()
-        self.db.refresh(db_order)
-        return db_order
+        self.db.refresh(order)
+        return order
 
     def get_all_orders(self):
         return self.db.query(Order).all()

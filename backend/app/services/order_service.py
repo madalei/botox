@@ -27,7 +27,6 @@ class OrderService:
         )
 
         self.repository.create_order(order)
-        self.repository.close()
 
         # Move this to a separate method
         # Execute on exchange (optional)
@@ -49,5 +48,7 @@ class OrderService:
                     "executed_at": datetime.now()
                 }
             )
+
+        self.repository.close()
 
         return order

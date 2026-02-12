@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
         secret=applicationSettings.binance_keys.secret,
         sandbox=True
     )
-    order_service = OrderService()
+    order_service = OrderService(exchange=exchange)
     bot_manager = BotManager(exchange=exchange, order_service=order_service)
 
     # Store in app.state

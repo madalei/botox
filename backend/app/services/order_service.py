@@ -1,4 +1,6 @@
 from sqlalchemy.orm import Session
+
+from app.infrastructure.adapters.binance_adapter import BinanceAdapter
 from app.models.order import Order
 from app.repositories.order_repository import OrderRepository
 from app.services.logging import bot_logger
@@ -9,10 +11,9 @@ class OrderService:
     Handles order execution.
     """
 
-    #def __init__(self):
-
-        # self.db = db
-        # self.binance_service = binance_service
+    def __init__(self, exchange: BinanceAdapter = None):
+        self.repository = OrderRepository() # creates its own session internally
+        self.exchange = exchange  # Can be None if no exchange configured
 
     async def create_order(self, order: Order) -> Order:
         """

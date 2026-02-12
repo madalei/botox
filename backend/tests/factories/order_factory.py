@@ -7,8 +7,8 @@ def build_order(
     side="BUY",
     symbol="BTC/USDT",
     bot_id="test_bot_default",
-    amount=0.5,
-    price=30_000,
+    amount=0.0002, # 10 dollars at 50k for BTC
+    price=30000,
     stop_loss=None,
     take_profit=None,
 ):

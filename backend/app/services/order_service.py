@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.infrastructure.adapters.binance_adapter import BinanceAdapter
@@ -25,20 +26,28 @@ class OrderService:
             extra={"symbol": order.symbol}
         )
 
-        repo = OrderRepository()  # creates its own session internally
-        repo.create_order(order)
-        repo.close()
+        self.repository.create_order(order)
+        self.repository.close()
 
+        # Move this to a separate method
         # Execute on exchange (optional)
-        # if self.binance_service:
-        #     try:
-        #         await self.binance_service.execute_order(order)
-        #         order.status = "EXECUTED"
-        #     except Exception as e:
-        #         order.status = "FAILED"
-        #         logger.error(f"Execution failed: {e}")
-        #
-        #     order.updated_at = datetime.utcnow()
-        #     self.db.commit()
+        if self.exchange:
+            try:
+                if order.side == "BUY":
+                    await self.exchange.place_market_buy(order.symbol, order.amount)
+                elif order.side == "SELL":
+                    await self.exchange.place_market_sell(order.symbol, order.amount)
+                # order.status = "EXECUTED"
+            except Exception as e:
+                # order.status = "FAILED"
+                bot_logger.error(f"Binance Order Execution failed: {e}")
+
+            self.repository.update_order(
+                id=order.id,
+                updates={
+                    "status": "EXECUTED",
+                    "executed_at": datetime.now()
+                }
+            )
 
         return order

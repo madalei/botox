@@ -20,3 +20,7 @@ class Order(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
+    # Execution tracking
+    #status: Mapped[str] = mapped_column(String, default="PENDING")  # PENDING, EXECUTED, FAILED, CANCELLED
+    #external_order_id: Mapped[str | None] = mapped_column(String, nullable=True)  # Binance order ID

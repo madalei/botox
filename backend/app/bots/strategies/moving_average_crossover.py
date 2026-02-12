@@ -17,6 +17,10 @@ class MovingAverageCrossoverStrategy(BaseModel):
     Sell when the short moving average crosses below the long moving average.
     """
 
+    # TODO: the exchange platform (e.g. Binance) should be initialized in the strategy constructor
+    #   and stored as an attribute, instead of being passed as a parameter to the generate_signals method.
+    #   This way, the strategy is more self-contained and can be reused across different bots without needing to pass the exchange each time.
+
     # Parameters you want to store in JSONB
     name: str = "MovingAVG-crossOver"
     symbol: str = "BTC/USDT"
@@ -110,8 +114,14 @@ class MovingAverageCrossoverStrategy(BaseModel):
         return dataframe
 
     def calculate_position_size(self, capital: float, current_price: float) -> float:
-        """Calculates position size based on capital and risk."""
-        amount_to_risk = capital * self.risk_per_trade
+        """Calculates position size based on capital and risk
+        position_size = amount = how many BTC you buy/sell
+        | You want to spend | You must send as amount |
+        | ----------------- | ----------------------- |
+        | 500 USDT          | 0.01 BTC                |
+        | 10 USDT           | 0.0002 BTC              |
+        """
+        amount_to_risk = capital * self.risk_per_trade # exemple capital = 1000 USDT, risk_per_trade = 0.01 => amount_to_risk = 10 USDT
         position_size = amount_to_risk / (current_price * self.stop_loss_pct)
         return position_size
 

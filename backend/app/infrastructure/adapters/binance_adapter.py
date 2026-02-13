@@ -47,18 +47,16 @@ class BinanceAdapter:
         :param amount: The amount of BTC to buy, e.g., 0.0001 for 0.0001 BTC"""
 
         try:
-            bot_logger.info(
-                f"Placing MARKET BUY | symbol={symbol} | raw_amount={amount}"
-            )
+            bot_logger.info(f"Placing MARKET BUY | symbol={symbol} | raw_amount={amount}"
+                            )
             # Ensure markets are loaded
             await self.client.load_markets()
 
             # Adjust precision
             amount = self.client.amount_to_precision(symbol, amount)
 
-            bot_logger.info(
-                f"Adjusted amount to precision: {amount}"
-            )
+            bot_logger.info(f"Adjusted amount to precision: {amount}")
+
             order = await self.client.create_market_buy_order(symbol, amount)
 
             bot_logger.info(
@@ -70,28 +68,16 @@ class BinanceAdapter:
             return order
 
         except ccxt.InsufficientFunds as e:
-            bot_logger.error(
-                f"MARKET BUY FAILED - Insufficient Funds | "
-                f"symbol={symbol} | amount={amount} | error={str(e)}"
-            )
+            bot_logger.error(f"MARKET BUY FAILED - Insufficient Funds | "f"symbol={symbol} | amount={amount} | error={str(e)}")
             raise
         except ccxt.InvalidOrder as e:
-            bot_logger.error(
-                f"MARKET BUY FAILED - Invalid Order | "
-                f"symbol={symbol} | amount={amount} | error={str(e)}"
-            )
+            bot_logger.error(f"MARKET BUY FAILED - Invalid Order | "f"symbol={symbol} | amount={amount} | error={str(e)}")
             raise
         except ccxt.ExchangeError as e:
-            bot_logger.error(
-                f"MARKET BUY FAILED - Exchange Error | "
-                f"symbol={symbol} | error={str(e)}"
-            )
+            bot_logger.error(f"MARKET BUY FAILED - Exchange Error | "f"symbol={symbol} | error={str(e)}")
             raise
         except Exception as e:
-            bot_logger.exception(
-                f"MARKET BUY FAILED - Unexpected Error | "
-                f"symbol={symbol} | error={str(e)}"
-            )
+            bot_logger.exception(f"MARKET BUY FAILED - Unexpected Error | "f"symbol={symbol} | error={str(e)}")
             raise
 
 
@@ -122,22 +108,13 @@ class BinanceAdapter:
             bot_logger.error(f"MARKET SELL FAILED - Insufficient Funds | "f"symbol={symbol} | amount={amount} | error={str(e)}")
             raise
         except ccxt.InvalidOrder as e:
-            bot_logger.error(
-                f"MARKET SELL FAILED - Invalid Order | "
-                f"symbol={symbol} | amount={amount} | error={str(e)}"
-            )
+            bot_logger.error(f"MARKET SELL FAILED - Invalid Order | "f"symbol={symbol} | amount={amount} | error={str(e)}")
             raise
         except ccxt.ExchangeError as e:
-            bot_logger.error(
-                f"MARKET SELL FAILED - Exchange Error | "
-                f"symbol={symbol} | error={str(e)}"
-            )
+            bot_logger.error(f"MARKET SELL FAILED - Exchange Error | "f"symbol={symbol} | error={str(e)}")
             raise
         except Exception as e:
-            bot_logger.exception(
-                f"MARKET SELL FAILED - Unexpected Error | "
-                f"symbol={symbol} | error={str(e)}"
-            )
+            bot_logger.exception(f"MARKET SELL FAILED - Unexpected Error | "f"symbol={symbol} | error={str(e)}")
             raise
 
     async def place_limit_buy(self, symbol: str, amount: float, price: float):

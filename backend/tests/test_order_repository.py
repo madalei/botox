@@ -1,38 +1,8 @@
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from app.models.order import Base, Order
 from app.repositories.order_repository import OrderRepository
 from tests.factories.bot_factory import create_bot_in_db
 from tests.factories.order_factory import build_order
-
-# PostgreSQL connection string
-DATABASE_URL = "postgresql://botox_user:botoxine@localhost:5432/botox_test"
-
-# Todo: move this to a common test utils file
-@pytest.fixture(scope="function")
-def test_db():
-    """Create a fresh test database session for each test"""
-    engine = create_engine(DATABASE_URL)
-
-    # Create all tables
-    Base.metadata.create_all(engine)
-
-    # Create session
-    TestingSessionLocal = sessionmaker(bind=engine)
-    session = TestingSessionLocal()
-
-    yield session
-
-    # Cleanup: rollback any changes and close session
-    session.rollback()
-    session.close()
-
-    # Clean up tables after test (optional - removes all data)
-    # uncomment to drop tables after each test
-    # Base.metadata.drop_all(engine)
-    engine.dispose()
-
 
 @pytest.fixture
 def order_repository(test_db):

@@ -27,20 +27,19 @@ class BaseBot:
         while self.status == BotStatus.RUNNING:
             try:
                 # Generate signal/order from strategy
-                order = await self.strategy.generate_signals(exchange, self.capital)
+                order_signal = await self.strategy.generate_signals(exchange, self.capital)
 
-                if order:
+                if order_signal:
                     bot_logger.info(
-                        f"Signal detected: {order.side} {order.amount} {order.symbol} at {order.price}",
+                        f"Signal detected: {order_signal.side} {order_signal.amount} {order_signal.symbol} at {order_signal.price}",
                         extra={"bot_id": self.bot_id}
                     )
 
-                    # Persist trade to DB if order_service is provided
-                    order_service.create_order(order)
+                    # Persist trade to DB
+                    db_order = OrderRepository.create_order(order_signal)
 
-                    # Todo
-                    # Call Binance API (pseudo)
-                    # await binance_service.execute_order(order)
+                    # Call Binance API to execute the order
+                    executed_order = await order_service.execute_order(db_order.id)
                 else:
                     bot_logger.info(f"No signal generated", extra={"bot_id": self.bot_id})
 

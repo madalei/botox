@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional, Dict, Any
 
 from pydantic import UUID4
@@ -41,6 +42,25 @@ class OrderRepository:
 
     def get_all_orders(self):
         return self.db.query(Order).all()
+
+    def get_order_by_id(self, order_id: uuid.UUID) -> type[Order]:
+        """Retrieve an order by its ID.
+        :param order_id: The UUID of the order
+        :return: an Order object
+        :raises ValueError: If order not found."""
+        try:
+            order = self.db.query(Order).filter(Order.id == order_id).first()
+            if not order:
+                raise ValueError(f"Order {order_id} not found")
+            return order
+        except ValueError:
+            raise
+        except Exception as e:
+            bot_logger.error(f"Failed to retrieve order {order_id}: {e}")
+            raise
+        finally:
+            self.close()
+
 
     def close(self):
         # Only close if we created it (when not handled by FastApi)

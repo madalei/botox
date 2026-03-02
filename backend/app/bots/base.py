@@ -15,42 +15,52 @@ class BaseBot:
         self.strategy = strategy
         self.capital = capital
         # Todo here maybe some other customisable params
-        self.check_interval = check_interval  # seconds
+        self.check_interval = check_interval  # seconds, by default, checks every 15 minutes (900 seconds).
         self.status = BotStatus.CREATED
         self._task: asyncio.Task | None = None
 
+    async def tick(self, exchange, order_service):
+        """
+        Execute a single strategy evaluation cycle.
+        """
+        # Generate signal/order from strategy
+        order_signal = await self.strategy.generate_signals(exchange, self.capital)
+
+        if not order_signal:
+            bot_logger.info("No signal generated", extra={"bot_id": self.bot_id})
+            return None
+
+        # Log the generated signal
+        bot_logger.info(
+            f"Signal detected: {order_signal.side} "
+            f"{order_signal.amount} {order_signal.symbol} "
+            f"at {order_signal.price}",
+            extra={"bot_id": self.bot_id},
+        )
+
+        # Persist order to DB
+        db_order = await order_service.create_order(order_signal)
+
+        # Execute order via exchange
+        executed_order = await order_service.execute_order(db_order.id)
+
+        return executed_order
+
     async def run(self, exchange, order_service=None):
         """
-        Internal loop: run the strategy each "check_interval" times and execute trades if signals appear.
-        By default, checks every 15 minutes (900 seconds).
+        Live trading loop: run the strategy each "check_interval" times and execute trades if signals appear.
         """
         bot_logger.info("Bot started", extra={"bot_id": self.bot_id})
         while self.status == BotStatus.RUNNING:
             try:
-                # Generate signal/order from strategy
-                order_signal = await self.strategy.generate_signals(exchange, self.capital)
-
-                if order_signal:
-                    bot_logger.info(
-                        f"Signal detected: {order_signal.side} {order_signal.amount} {order_signal.symbol} at {order_signal.price}",
-                        extra={"bot_id": self.bot_id}
-                    )
-
-                    # Persist order to DB
-                    db_order = await order_service.create_order(order_signal)
-
-                    # Call Binance API to execute the order
-                    executed_order = await order_service.execute_order(db_order.id)
-                else:
-                    bot_logger.info(f"No signal generated", extra={"bot_id": self.bot_id})
-
+                await self.tick(exchange, order_service)
                 await asyncio.sleep(self.check_interval)
-
             except Exception as e:
                 bot_logger.error(f"Error in bot loop: {e}", extra={"bot_id": self.bot_id})
                 await asyncio.sleep(self.check_interval)
 
         bot_logger.info(f"Bot {self.bot_id} stopped", extra={"bot_id": self.bot_id})
+
 
     # async def start(self, exchange, order_service=None):
     #     self.status = BotStatus.RUNNING

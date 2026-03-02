@@ -27,6 +27,10 @@ def engine():
 
 @pytest.fixture(scope="function")
 def test_db(engine):
+    """Every test runs inside a transaction
+    The transaction is never committed
+    At the end of the test, it is rolled back"""
+
     connection = engine.connect()
     transaction = connection.begin()
 

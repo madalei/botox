@@ -11,6 +11,7 @@ def build_order(
     price=30000,
     stop_loss=None,
     take_profit=None,
+    status=None
 ):
     return Order(
         id=None,
@@ -21,5 +22,6 @@ def build_order(
         price=price,
         stop_loss=stop_loss,
         take_profit=take_profit,
-        created_at=datetime.now()
+        created_at=datetime.now(),
+        status="PENDING"
     )

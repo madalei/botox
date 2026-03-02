@@ -17,7 +17,6 @@ class OrderService:
         self.exchange = exchange  # Can be None if no exchange configured
 
 
-    # @no more used exept in tests
     async def create_order(self, order: Order) -> Order:
         """Create and persist order to DB"""
         bot_logger.info(f"Creating order {order.side} {order.amount} {order.symbol}")

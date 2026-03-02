@@ -36,8 +36,8 @@ class BaseBot:
                         extra={"bot_id": self.bot_id}
                     )
 
-                    # Persist trade to DB
-                    db_order = OrderRepository.create_order(order_signal)
+                    # Persist order to DB
+                    db_order = await order_service.create_order(order_signal)
 
                     # Call Binance API to execute the order
                     executed_order = await order_service.execute_order(db_order.id)

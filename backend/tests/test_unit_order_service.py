@@ -25,7 +25,6 @@ def mock_repository():
 # -----------------------------------------
 # Test BUY order execution
 # -----------------------------------------
-
 @pytest.mark.asyncio
 async def test_create_order_buy_executes_market_buy(mock_exchange, mock_repository):
     buy_order = build_order(
@@ -36,19 +35,16 @@ async def test_create_order_buy_executes_market_buy(mock_exchange, mock_reposito
         stop_loss=0.02,
         take_profit=0.04,
     )
-
     service = OrderService(exchange=mock_exchange)
     service.repository = mock_repository
 
     await service.create_order(buy_order)
     mock_repository.create_order.assert_called_once_with(buy_order)
     mock_repository.close.assert_called_once()
-    mock_exchange.place_market_buy.assert_awaited_once_with("BTC/EUR", 0.0002)
 
 # -----------------------------------------
 # Test SELL order execution
 # -----------------------------------------
-
 @pytest.mark.asyncio
 async def test_create_order_sell_executes_market_sell(mock_exchange, mock_repository):
 
@@ -61,14 +57,19 @@ async def test_create_order_sell_executes_market_sell(mock_exchange, mock_reposi
     service = OrderService(exchange=mock_exchange)
     service.repository = mock_repository
 
-    await service.create_order(sell_order)
+    # create_order returns the DB order
+    mock_repository.create_order.return_value = sell_order
+    db_order = await service.create_order(sell_order)
 
+    # execute_order fetches from repository
+    mock_repository.get_order_by_id.return_value = db_order
+
+    exec_order = await service.execute_order(db_order.id)
     mock_exchange.place_market_sell.assert_awaited_once_with("BTC/EUR", 0.0003)
 
 # -----------------------------------------
 # Test exchange failure is handled
 # -----------------------------------------
-
 @pytest.mark.asyncio
 async def test_create_order_exchange_failure_logs_error(mock_exchange, mock_repository):
     buy_order = build_order(
@@ -83,8 +84,11 @@ async def test_create_order_exchange_failure_logs_error(mock_exchange, mock_repo
 
     service = OrderService(exchange=mock_exchange)
     service.repository = mock_repository
-
-    await service.create_order(buy_order)
-
-    mock_exchange.place_market_buy.assert_awaited_once()
-    # Should not raise exception
+    # create_order saves and returns the DB order
+    mock_repository.create_order.return_value = buy_order
+    db_order = await service.create_order(buy_order)
+    # execute_order reloads from repository
+    mock_repository.get_order_by_id.return_value = db_order
+    # Should NOT raise
+    await service.execute_order(db_order.id)
+    mock_exchange.place_market_buy.assert_awaited_once_with("BTC/EUR", 0.0002)

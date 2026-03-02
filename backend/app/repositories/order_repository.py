@@ -2,9 +2,13 @@ from typing import Optional, Dict, Any
 
 from pydantic import UUID4
 from pydantic.v1 import UUID1
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+from app.models.bot import Bot
 from app.models.order import Order
 from app.infrastructure.adapters.database import get_db, SessionLocal
+from app.services.logging import bot_logger
 
 
 class OrderRepository:

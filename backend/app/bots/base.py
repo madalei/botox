@@ -1,3 +1,4 @@
+from app.repositories.order_repository import OrderRepository
 from app.services.logging import bot_logger
 from enum import Enum
 import asyncio

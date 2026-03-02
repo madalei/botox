@@ -19,10 +19,21 @@ class OrderRepository:
         self.db = db or SessionLocal()
 
     def create_order(self, order):
-        self.db.add(order)
-        self.db.commit()
-        self.db.refresh(order)
-        return order
+        bot_exists = (self.db.query(Bot).filter(Bot.id == order.bot_id).first())
+
+        if not bot_exists:
+            bot_logger.error(f"Bot {order.bot_id} not found, cant create associated order")
+
+        try:
+            self.db.add(order)
+            self.db.commit()
+            self.db.refresh(order)
+            return order
+
+        except IntegrityError:
+            self.db.rollback()
+            raise
+
 
     def get_all_orders(self):
         return self.db.query(Order).all()

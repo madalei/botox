@@ -157,21 +157,21 @@ class MovingAverageCrossoverStrategy(BaseModel):
             bot_logger.info(f"- Upward crossing - Short MA just crossed above long MA - should emit a BUY signal")
             # If no trade is active
             if not self._is_position_open:
-                self.position_size = self.calculate_position_size(capital, current_price)
-                self.entry_price = current_price
+                self._position_size = self.calculate_position_size(capital, current_price)
+                self._entry_price = current_price
                 self._is_position_open = True
 
                 signal = {
                     "type": "BUY",
                     "symbol": self.symbol,
                     "price": current_price,
-                    "amount": self.position_size,
+                    "amount": self._position_size,
                     "stop_loss": current_price * (1 - self.stop_loss_pct),
                     "take_profit": current_price * (1 + self.take_profit_pct),
                     "timestamp": datetime.now().isoformat()
                 }
 
-                self.last_signal = "BUY"
+                self._last_signal = "BUY"
 
         # Sell signal: short MA just crossed below long MA
         elif last_crossover == -2:  # Downward crossing (from 1 to -1)
@@ -183,11 +183,11 @@ class MovingAverageCrossoverStrategy(BaseModel):
                     "type": "SELL",
                     "symbol": self.symbol,
                     "price": current_price,
-                    "amount": self.position_size,
+                    "amount": self._position_size,
                     "timestamp": datetime.now().isoformat()
                 }
 
-                self.last_signal = "SELL"
+                self._last_signal = "SELL"
 
         # Create an order if a signal was generated
         if signal:

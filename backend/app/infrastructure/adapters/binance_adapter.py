@@ -1,11 +1,13 @@
 import ccxt
 import ccxt.async_support as ccxt_async
+import pandas as pd
 
+from app.infrastructure.adapters.market_data_provider_interface import MarketDataProviderInterface
 from app.models.order import Order
 from app.services.logging import bot_logger
 
 
-class BinanceAdapter:
+class BinanceAdapter(MarketDataProviderInterface):
     def __init__(self, api_key: str, secret: str, sandbox: bool = True):
         self.client = ccxt_async.binance({
             "apiKey": api_key,
@@ -19,6 +21,43 @@ class BinanceAdapter:
 
     def parse_timeframe(self, timeframe: str) -> int:
         return self.client.parse_timeframe(timeframe)
+
+    def tick(self) -> bool:
+        # Live data always advances
+        return True
+
+    async def get_history(self, symbol: str, timeframe: str, limit: int = 250) -> pd.DataFrame:
+        """
+            Return a DataFrame containing historical market data of OHLCV (Open, High, Low, Close, Volume) for the
+            configured trading symbol and timeframe.
+            - Calls Binance API
+            - Downloads candles
+            - Converts to a dataframe
+
+            limit : int, optional (default=100)
+                The maximum number of OHLCV candles to retrieve. The actual historical
+                coverage depends on the configured timeframe. For example, with a
+                timeframe of "1h" and limit=100, approximately 100 hours of historical
+                data (~4.2 days) will be fetched.
+                but 100 is not enought to get good statistic indicators, so better to use approximativelly 5* the long window
+                limit = max(200, self.long_window * 5)
+                This will make indicator more "mature" and steady
+        """
+        try:
+            since = self.milliseconds() - (limit * self.parse_timeframe(timeframe) * 1000)  # if timeframe = 1h, limit * timeframe = 100 * 1h = 100h = 4.2days
+
+            ohlcv = await self.fetch_ohlcv(symbol=symbol, timeframe=timeframe, since=since, limit=limit)
+
+            dataframe = pd.DataFrame(
+                ohlcv,
+                columns=["timestamp", "open", "high", "low", "close", "volume"],
+            )
+            dataframe["timestamp"] = pd.to_datetime(dataframe["timestamp"], unit="ms")
+            return dataframe
+
+        except Exception as e:
+            print(f"Error retrieving historical data: {e}")
+            return pd.DataFrame()
 
     # @param symbol
     #   "BTC/USDT" → trading Bitcoin against Tether

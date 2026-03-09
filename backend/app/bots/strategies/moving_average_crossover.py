@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 from pydantic import BaseModel, PrivateAttr
 
 from app.infrastructure.adapters.binance_adapter import BinanceAdapter
+from app.infrastructure.adapters.market_data_provider_interface import MarketDataProviderInterface
 from app.models.order import Order
 from app.services.logging import bot_logger
 
@@ -50,6 +51,11 @@ class MovingAverageCrossoverStrategy(BaseModel):
     #   stop_loss_pct = 0.025
     #   take_profit_pct = 0.06
 
+    # | timeframe | short MA | long MA | meaning           |
+    # | --------- | -------- | ------- | ----------------- |
+    # | `1h`      | 20       | 50      | 20h vs 50h trend  |
+    # | `15m`     | 20       | 50      | 5h vs 12.5h trend |
+    # | `4h`      | 20       | 50      | 80h vs 200h trend |
 
     # Internal runtime state (not stored in DB)
     _is_position_open: bool = PrivateAttr(default=False)
@@ -59,30 +65,30 @@ class MovingAverageCrossoverStrategy(BaseModel):
     _last_check_time: Optional[str] = PrivateAttr(default=None)
 
 
-    async def get_historical_data(self, exchange: BinanceAdapter, limit: int = 250) -> pandas.DataFrame:
-        """
-        Return a DataFrame containing historical market data of OHLCV (Open, High, Low, Close, Volume) for the
-        configured trading symbol and timeframe.
-
-    limit : int, optional (default=100)
-        The maximum number of OHLCV candles to retrieve. The actual historical
-        coverage depends on the configured timeframe. For example, with a
-        timeframe of "1h" and limit=100, approximately 100 hours of historical
-        data (~4.2 days) will be fetched.
-        but 100 is not enought to get good statistic indicators, so better to use approximativelly 5* the long window
-        limit = max(200, self.long_window * 5)
-        This will make indicator more "mature" and steady
-    """
-        try:
-            since = exchange.milliseconds() - (limit * exchange.parse_timeframe(self.timeframe) * 1000) # if timeframe = 1h, limit * timeframe = 100 * 1h = 100h = 4.2days
-            ohlcv = await exchange.fetch_ohlcv(self.symbol, self.timeframe, since, limit)
-
-            dataframe = pandas.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            dataframe['timestamp'] = pandas.to_datetime(dataframe['timestamp'], unit='ms')
-            return dataframe
-        except Exception as e:
-            print(f"Error retrieving historical data: {e}")
-            return pandas.DataFrame()
+    # async def get_historical_data(self, exchange: BinanceAdapter, limit: int = 250) -> pandas.DataFrame:
+    #     """
+    #     Return a DataFrame containing historical market data of OHLCV (Open, High, Low, Close, Volume) for the
+    #     configured trading symbol and timeframe.
+    #
+    # limit : int, optional (default=100)
+    #     The maximum number of OHLCV candles to retrieve. The actual historical
+    #     coverage depends on the configured timeframe. For example, with a
+    #     timeframe of "1h" and limit=100, approximately 100 hours of historical
+    #     data (~4.2 days) will be fetched.
+    #     but 100 is not enought to get good statistic indicators, so better to use approximativelly 5* the long window
+    #     limit = max(200, self.long_window * 5)
+    #     This will make indicator more "mature" and steady
+    # """
+    #     try:
+    #         since = exchange.milliseconds() - (limit * exchange.parse_timeframe(self.timeframe) * 1000) # if timeframe = 1h, limit * timeframe = 100 * 1h = 100h = 4.2days
+    #         ohlcv = await exchange.fetch_ohlcv(self.symbol, self.timeframe, since, limit)
+    #
+    #         dataframe = pandas.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+    #         dataframe['timestamp'] = pandas.to_datetime(dataframe['timestamp'], unit='ms')
+    #         return dataframe
+    #     except Exception as e:
+    #         print(f"Error retrieving historical data: {e}")
+    #         return pandas.DataFrame()
 
     def calculate_indicators(self, dataframe: pandas.DataFrame) -> pandas.DataFrame:
         """Calculates technical indicators for the strategy."""
@@ -125,13 +131,14 @@ class MovingAverageCrossoverStrategy(BaseModel):
         position_size = amount_to_risk / (current_price * self.stop_loss_pct)
         return position_size
 
-    async def generate_signals(self, exchange: BinanceAdapter, capital: float = 1000.0) -> Optional[Dict]:
+    async def generate_signals(self, market_data: MarketDataProviderInterface, capital: float = 1000.0) -> Optional[Dict]:
         """
         Analyzes data and generates trading signals.
         Returns an order to execute if a signal is detected.
         """
         # Get enough historical data
-        history_df = await self.get_historical_data(exchange, limit=self.long_window * 5)
+        # history_df = await self.get_historical_data(exchange, limit=self.long_window * 5)
+        history_df = await market_data.get_history(self.symbol, self.timeframe, limit=self.long_window * 5)
         if history_df.empty:
             return None
 
@@ -141,6 +148,9 @@ class MovingAverageCrossoverStrategy(BaseModel):
         # Ignore warmup
         # Supprime les premières bougies où les MA ne sont pas encore calculables
         df = df.iloc[self.long_window:]  # supprime les 49 premières lignes où long_ma est NaN sinon la prochaine ligne ne passe pas
+
+        if df.empty:
+            return None
 
         # Observe the last crossover
         last_row = df.iloc[-1]

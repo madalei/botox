@@ -115,3 +115,42 @@ async def test_backtest_4h_september_2025():
 
     for i in range(len(orders) - 1):
         assert orders[i].side != orders[i + 1].side
+
+
+@pytest.mark.asyncio
+async def test_backtest_4h_december_2025():
+    candles = load_candles("BTCUSDT-4h-2025-12.csv")
+    strategy = MovingAverageCrossoverStrategy(timeframe="4h", short_window=9, long_window=21)
+
+    orders = await run_backtest(candles, strategy)
+    buys = [o for o in orders if o.side == "BUY"]
+    sells = [o for o in orders if o.side == "SELL"]
+    pnl, completed_trades = compute_pnl(orders)
+
+    print(f"\n=== Backtest: BTCUSDT 4h — December 2025 ===")
+    print(f"Signals   : {len(orders)} total ({len(buys)} BUY, {len(sells)} SELL)")
+    print(f"Completed : {completed_trades} round trips")
+    print(f"P&L       : {pnl:+.2f} USDT")
+
+    for i in range(len(orders) - 1):
+        assert orders[i].side != orders[i + 1].side
+
+
+@pytest.mark.asyncio
+async def test_backtest_1h_february_2026():
+    candles = load_candles("BTCUSDT-1h-2026-02.csv")
+    strategy = MovingAverageCrossoverStrategy()
+
+    orders = await run_backtest(candles, strategy)
+    buys = [o for o in orders if o.side == "BUY"]
+    sells = [o for o in orders if o.side == "SELL"]
+    pnl, completed_trades = compute_pnl(orders)
+
+    print(f"\n=== Backtest: BTCUSDT 1h — February 2026 ===")
+    print(f"Signals   : {len(orders)} total ({len(buys)} BUY, {len(sells)} SELL)")
+    print(f"Completed : {completed_trades} round trips")
+    print(f"P&L       : {pnl:+.2f} USDT")
+
+    assert len(buys) > 0
+    for i in range(len(orders) - 1):
+        assert orders[i].side != orders[i + 1].side

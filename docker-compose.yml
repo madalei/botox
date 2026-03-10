@@ -1,0 +1,34 @@
+:services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: botox_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: botox
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botox_user -d botox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      USE_SANDBOX: "False"
+      DATABASE_URL: postgresql://botox_user:${DB_PASSWORD}@db:5432/botox
+      BINANCE_API_KEY_PRODUCTION: ${BINANCE_API_KEY_PRODUCTION}
+      BINANCE_API_SECRET_PRODUCTION: ${BINANCE_API_SECRET_PRODUCTION}
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:

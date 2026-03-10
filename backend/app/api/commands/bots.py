@@ -20,12 +20,13 @@ def bot_repository_singleton(db: Session = Depends(get_db)) -> BotRepository:
     return BotRepository(db)
 
 class StrategyParams(BaseModel):
-    symbol: str = Field( default="BTC/USDT", description="Trading pair symbol")
-    timeframe: str = Field( default="1h", description="Candlestick timeframe")
-    short_window: int = Field( default=20,ge=1,description="Short moving average window")
-    long_window: int = Field(default=50,ge=1,description="Long moving average window")
-    check_interval: int = Field(default=900,description="Time Interval in second, between strategy execute")
-    stop_loss_pct: float = Field(default=0.02,gt=0,le=1,description="Stop loss percentage (0–1)")
+    symbol: str = Field(default="BTC/USDT", description="Trading pair symbol")
+    timeframe: str = Field(default="1h", description="Candlestick timeframe")
+    short_window: int = Field(default=20, ge=1, description="Short moving average window")
+    long_window: int = Field(default=50, ge=1, description="Long moving average window")
+    check_interval: int = Field(default=900, description="Interval in seconds between strategy ticks")
+    stop_loss_pct: float = Field(default=0.02, gt=0, le=1, description="Stop loss percentage (0–1)")
+    take_profit_pct: float = Field(default=0.04, gt=0, le=1, description="Take profit percentage (0–1)")
 
 @router.post("/bots")
 async def create_bots( strategy_params: StrategyParams,

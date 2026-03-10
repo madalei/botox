@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     exchange = BinanceAdapter(
         api_key=applicationSettings.binance_keys.api_key,
         secret=applicationSettings.binance_keys.secret,
-        sandbox=True
+        sandbox=applicationSettings.sandbox_mode
     )
     order_service = OrderService(exchange=exchange)
     bot_manager = BotManager(exchange=exchange, order_service=order_service)

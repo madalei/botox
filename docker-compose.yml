@@ -27,6 +27,9 @@
       DATABASE_URL: postgresql://botox_user:${DB_PASSWORD}@db:5432/botox
       BINANCE_API_KEY_PRODUCTION: ${BINANCE_API_KEY_PRODUCTION}
       BINANCE_API_SECRET_PRODUCTION: ${BINANCE_API_SECRET_PRODUCTION}
+      LOG_DIR: /app/logs
+    volumes:
+      - ./logs:/app/logs
     ports:
       - "8000:8000"
 

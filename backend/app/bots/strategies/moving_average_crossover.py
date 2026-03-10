@@ -102,7 +102,8 @@ class MovingAverageCrossoverStrategy(BaseModel):
         dataframe['short_ma'] = dataframe['close'].rolling(window=self.short_window).mean()
         dataframe['long_ma'] = dataframe['close'].rolling(window=self.long_window).mean()
 
-        # Calculate signal
+        # Crossover signal: +1 when short > long (uptrend), -1 when short < long (downtrend)
+        # diff() produces +2 on upward cross, -2 on downward cross
         dataframe['signal'] = 0
         # if short avg > long avg => price is increasing
         # dataframe.loc[condition_lines, column] = x => assign value x to line that validate the condition
@@ -136,8 +137,6 @@ class MovingAverageCrossoverStrategy(BaseModel):
         Analyzes data and generates trading signals.
         Returns an order to execute if a signal is detected.
         """
-        # Get enough historical data
-        # history_df = await self.get_historical_data(exchange, limit=self.long_window * 5)
         history_df = await market_data.get_history(self.symbol, self.timeframe, limit=self.long_window * 5)
         if history_df.empty:
             return None
@@ -145,49 +144,68 @@ class MovingAverageCrossoverStrategy(BaseModel):
         # Calculate indicators
         df = self.calculate_indicators(history_df)
 
-        # Ignore warmup
-        # Supprime les premières bougies où les MA ne sont pas encore calculables
-        df = df.iloc[self.long_window:]  # supprime les 49 premières lignes où long_ma est NaN sinon la prochaine ligne ne passe pas
+        # Drop warmup rows where the long MA is not yet computable (NaN)
+        df = df.iloc[self.long_window:] # supprime les 49 premières lignes où long_ma est NaN sinon la prochaine ligne ne passe pas
 
         if df.empty:
             return None
 
-        # Observe the last crossover
+        # Read the latest candle
         last_row = df.iloc[-1]
         last_crossover = last_row['crossover']
         current_price = last_row['close']
+        short_ma = last_row['short_ma']
+        long_ma = last_row['long_ma']
 
-        # Update state
         self._last_check_time = datetime.now()
-
         signal = None
 
         # Buy signal: short MA just crossed above long MA
         if last_crossover == 2:  # Upward crossing (from -1 to 1)
-            bot_logger.info(f"- Upward crossing - Short MA just crossed above long MA - should emit a BUY signal")
-            # If no trade is active
             if not self._is_position_open:
                 self._position_size = self.calculate_position_size(capital, current_price)
                 self._entry_price = current_price
                 self._is_position_open = True
+
+                stop_loss = current_price * (1 - self.stop_loss_pct)
+                take_profit = current_price * (1 + self.take_profit_pct)
+
+                bot_logger.info(
+                    f"BUY  | {self.symbol} | price={current_price:.2f}"
+                    f" | amount={self._position_size:.6f}"
+                    f" | sl={stop_loss:.2f} tp={take_profit:.2f}"
+                    f" | short_ma={short_ma:.2f} long_ma={long_ma:.2f}"
+                )
 
                 signal = {
                     "type": "BUY",
                     "symbol": self.symbol,
                     "price": current_price,
                     "amount": self._position_size,
-                    "stop_loss": current_price * (1 - self.stop_loss_pct),
-                    "take_profit": current_price * (1 + self.take_profit_pct),
+                    "stop_loss": stop_loss,
+                    "take_profit": take_profit,
                     "timestamp": datetime.now().isoformat()
                 }
 
                 self._last_signal = "BUY"
+            else:
+                bot_logger.info(
+                    f"BUY signal skipped — position already open | {self.symbol} | price={current_price:.2f}"
+                )
 
         # Sell signal: short MA just crossed below long MA
         elif last_crossover == -2:  # Downward crossing (from 1 to -1)
-            bot_logger.info(f"- Downward crossing - Short MA just crossed below long MA - should emit a SELL signal")
             if self._is_position_open:
                 self._is_position_open = False
+                pnl = (current_price - self._entry_price) * self._position_size
+
+                bot_logger.info(
+                    f"SELL | {self.symbol} | price={current_price:.2f}"
+                    f" | amount={self._position_size:.6f}"
+                    f" | entry={self._entry_price:.2f}"
+                    f" | pnl={pnl:+.2f} USDT"
+                    f" | short_ma={short_ma:.2f} long_ma={long_ma:.2f}"
+                )
 
                 signal = {
                     "type": "SELL",
@@ -198,6 +216,10 @@ class MovingAverageCrossoverStrategy(BaseModel):
                 }
 
                 self._last_signal = "SELL"
+            else:
+                bot_logger.info(
+                    f"SELL signal skipped — no open position | {self.symbol} | price={current_price:.2f}"
+                )
 
         # Create an order if a signal was generated
         if signal:

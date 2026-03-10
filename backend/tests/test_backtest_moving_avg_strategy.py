@@ -21,7 +21,11 @@ async def run_backtest(candles: pd.DataFrame, strategy: MovingAverageCrossoverSt
     """
     Replay candles through the strategy using HistoricalExchange.
     Returns the list of Order signals generated.
+    If the backtest ends with an open position, it is closed at the last candle price.
     """
+    from app.models.order import Order
+    from datetime import datetime
+
     exchange = HistoricalExchange(candles)
     orders = []
 
@@ -29,6 +33,20 @@ async def run_backtest(candles: pd.DataFrame, strategy: MovingAverageCrossoverSt
         signal = await strategy.generate_signals(exchange, capital=capital)
         if signal:
             orders.append(signal)
+
+    # Close any open position at the final candle price so it is included in P&L
+    buys = [o for o in orders if o.side == "BUY"]
+    sells = [o for o in orders if o.side == "SELL"]
+    if len(buys) > len(sells):
+        last_price = float(candles.iloc[-1]["close"])
+        orders.append(Order(
+            bot_id="",
+            symbol=buys[-1].symbol,
+            side="SELL",
+            amount=buys[-1].amount,
+            price=last_price,
+            created_at=datetime.now(),
+        ))
 
     return orders
 

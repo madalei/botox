@@ -9,8 +9,8 @@ from app.infrastructure.adapters.binance_adapter import BinanceAdapter
 async def test_market_buy_on_testnet():
 
     load_dotenv(".env.test")
-    api_key = os.getenv("BINANCE_API_KEY")
-    secret = os.getenv("BINANCE_SECRET")
+    api_key = os.getenv("TESTNET_API_KEY")
+    secret = os.getenv("TESTNET_SECRET")
 
     exchange = BinanceAdapter(api_key, secret, sandbox=True)
 

@@ -44,3 +44,10 @@ How to have a postgresql db?
 
 #### Access the PostgreSQL command-line interface: 
 ``psql postgres`` or `psql -U your_user -d postgres`
+
+#### when running from docker
+
+ Dumps will appear in ./backups/botox_2026-03-11.sql.gz on the host, rotated daily at 02:00 UTC, kept for 30 days.                         
+                                                                                                                                            
+ To restore a dump manually:                                                                                                               
+  `gunzip -c backups/botox_2026-03-11.sql.gz | docker compose exec -T db psql -U botox_user -d botox`        

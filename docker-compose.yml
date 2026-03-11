@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: botox
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Migrations run automatically on first start (Postgres executes any .sql in /docker-entrypoint-initdb.d)
       - ./backend/app/infrastructure/migrations:/docker-entrypoint-initdb.d:ro
     ports:
       # 5433 (my mac) : 5432 (inside container) — avoids conflict with local Postgres
@@ -55,7 +56,7 @@ services:
       POSTGRES_DB: botox
       PGPASSWORD: ${DB_PASSWORD}
     volumes:
-      # Daily pg_dump files stored on host at ./backups/, kept for 30 days
+      # Weekly pg_dump files stored on host at ./backups/
       - ./backups:/backups
 
 volumes:

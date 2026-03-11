@@ -1,4 +1,4 @@
-:services:
+services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -8,6 +8,7 @@
       POSTGRES_DB: botox
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/app/infrastructure/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U botox_user -d botox"]
       interval: 10s
@@ -22,16 +23,31 @@
       db:
         condition: service_healthy
     environment:
-      ENVIRONMENT: production
-      USE_SANDBOX: "False"
+      ENVIRONMENT: ${ENVIRONMENT}
+      USE_SANDBOX: ${USE_SANDBOX}
       DATABASE_URL: postgresql://botox_user:${DB_PASSWORD}@db:5432/botox
-      BINANCE_API_KEY_PRODUCTION: ${BINANCE_API_KEY_PRODUCTION}
-      BINANCE_API_SECRET_PRODUCTION: ${BINANCE_API_SECRET_PRODUCTION}
+      BINANCE_API_KEY_SANDBOX: ${BINANCE_API_KEY_SANDBOX}
+      BINANCE_API_SECRET_SANDBOX: ${BINANCE_API_SECRET_SANDBOX}
       LOG_DIR: /app/logs
     volumes:
       - ./logs:/app/logs
     ports:
-      - "8000:8000"
+      - "8001:8000"
+
+  backup:
+    build:
+      context: ./backup
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: botox_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: botox
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./backups:/backups
 
 volumes:
   postgres_data:

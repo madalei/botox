@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     await exchange.close()
 
 
-app = FastAPI(title="Botox API", lifespan=lifespan)
+app = FastAPI(title="Botox API", lifespan=lifespan, root_path=applicationSettings.root_path)
 
 # Importer toutes les routes définies dans router.py
 app.include_router(router)

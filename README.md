@@ -51,3 +51,25 @@ How to have a postgresql db?
                                                                                                                                             
  To restore a dump manually:                                                                                                               
   `gunzip -c backups/botox_2026-03-11.sql.gz | docker compose exec -T db psql -U botox_user -d botox`        
+
+
+### The .env file
+
+about ROOT_PATH variable:
+
+When nginx receives https://46.224.199.1/botox/docs, it strips /botox/ and forwards   
+  just /docs to FastAPI (because of the trailing slash in proxy_pass).                
+                                                                                        
+  FastAPI receives /docs and renders Swagger — but Swagger then tries to fetch the API  
+  definition at /openapi.json (absolute path, no /botox/ prefix). That request hits     
+  nginx, which doesn't match any location block → 404.                                  
+                  
+  root_path tells FastAPI "you're mounted under /botox", so Swagger requests            
+  /botox/openapi.json instead → nginx forwards it correctly → works.
+                                                                                        
+  Browser → https://46.224.199.1/botox/docs                                             
+  nginx   → strips /botox/ → forwards /docs to FastAPI :8001                            
+  FastAPI → renders Swagger, but Swagger fetches /openapi.json  ← wrong, 404            
+                                                                                        
+  With root_path=/botox:                                                                
+  FastAPI → renders Swagger, Swagger fetches /botox/openapi.json ← correct, 200    

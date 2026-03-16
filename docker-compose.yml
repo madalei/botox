@@ -35,6 +35,7 @@ services:
       DATABASE_URL: postgresql://botox_user:${DB_PASSWORD}@db:5432/botox
       BINANCE_API_KEY_SANDBOX: ${BINANCE_API_KEY_SANDBOX}
       BINANCE_API_SECRET_SANDBOX: ${BINANCE_API_SECRET_SANDBOX}
+      ROOT_PATH: ${ROOT_PATH}
       LOG_DIR: /app/logs
     volumes:
       # Logs are written here inside the container and stored on the host at ./logs/

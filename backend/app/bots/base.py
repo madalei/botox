@@ -38,6 +38,8 @@ class BaseBot:
             extra={"bot_id": self.bot_id},
         )
 
+        order_signal.bot_id = self.bot_id
+
         # Persist order to DB
         db_order = await order_service.create_order(order_signal)
 

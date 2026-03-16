@@ -31,7 +31,7 @@ async def test_full_order_execution(test_db):
     # init orderService (should be injected to run())
     order_service = OrderService(exchange=exchange, repository=order_repo)
 
-    # Like bot.run() flow
+    # Like tick() flow called from bot.run()
     # aka
     # 1. generates a signal
     # 2. creates an order in the database with status "PENDING"
@@ -39,16 +39,16 @@ async def test_full_order_execution(test_db):
 
     # TODO: 1. mock signal generated, so we create an order
 
-    buy_order = build_order(
+    buy_order_sig = build_order(
         side="BUY",
-        bot_id=bot.id,
         symbol="BTC/EUR",
         stop_loss=0.02,
         take_profit=0.04,
     )
+    buy_order_sig.bot_id = bot.id # same as in tick() from base bot
 
     # 2. create order in DB
-    db_order = await order_service.create_order(buy_order)
+    db_order = await order_service.create_order(buy_order_sig)
 
     assert db_order.symbol == "BTC/EUR"
     assert db_order.side == "BUY"

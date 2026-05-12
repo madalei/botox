@@ -81,6 +81,12 @@ The server run Nginx reverse proxy and white list my IP address to access the ap
 
 Connect to server with `ssh botserver` @seealso ssh config for details
 
+To restart App after changes, run 
+```
+git pull
+docker compose up --build -d`
+```
+
 #### Local Forward DB ports 
 
 docker-compose file on server side should contain: 

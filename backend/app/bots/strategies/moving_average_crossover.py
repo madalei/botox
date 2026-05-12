@@ -142,15 +142,11 @@ class MovingAverageCrossoverStrategy(BaseModel):
 
     def calculate_position_size(self, capital: float, current_price: float) -> float:
         """Calculates position size based on capital and risk
-        position_size = amount = how many BTC you buy/sell
-        | You want to spend | You must send as amount |
-        | ----------------- | ----------------------- |
-        | 500 USDT          | 0.01 BTC                |
-        | 10 USDT           | 0.0002 BTC              |
+        amount_to_spend = capital × risk_per_trade  (ex: 1000 × 0.01 = 10 USDT)
+        position_size   = amount_to_spend / price   (ex: 10 / 70000 = 0.000142 BTC)
         """
-        amount_to_risk = capital * self.risk_per_trade # exemple capital = 1000 USDT, risk_per_trade = 0.01 => amount_to_risk = 10 USDT
-        position_size = amount_to_risk / (current_price * self.stop_loss_pct)
-        return position_size
+        amount_to_spend = capital * self.risk_per_trade
+        return amount_to_spend / current_price
 
     async def generate_signals(self, market_data: MarketDataProviderInterface, capital: float = 1000.0) -> Optional[Dict]:
         """

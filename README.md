@@ -73,3 +73,28 @@ When nginx receives https://46.224.199.1/botox/docs, it strips /botox/ and forwa
                                                                                         
   With root_path=/botox:                                                                
   FastAPI → renders Swagger, Swagger fetches /botox/openapi.json ← correct, 200    
+
+
+### About Heztner server:
+
+The server run Nginx reverse proxy and white list my IP address to access the app
+
+Connect to server with `ssh botserver` @seealso ssh config for details
+
+#### Local Forward DB ports 
+
+docker-compose file on server side should contain: 
+``` 
+ports:
+- "5432:5432" # "host_port:container_port"
+```
+
+SSH config on local
+```
+Host botserver
+HostName <your-server-ip>
+User <your-user>
+LocalForward 5434 localhost:5432
+```
+pgAdmin should be set to **localhost:5434.**
+

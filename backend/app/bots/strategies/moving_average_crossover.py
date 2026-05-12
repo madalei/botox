@@ -64,6 +64,8 @@ class MovingAverageCrossoverStrategy(BaseModel):
     _last_signal: Optional[str] = PrivateAttr(default=None)
     _last_check_time: Optional[str] = PrivateAttr(default=None)
 
+    _stop_loss: float = PrivateAttr(default=0.0)
+    _take_profit: float = PrivateAttr(default=0.0)
 
     # async def get_historical_data(self, exchange: BinanceAdapter, limit: int = 250) -> pandas.DataFrame:
     #     """
@@ -120,6 +122,24 @@ class MovingAverageCrossoverStrategy(BaseModel):
 
         return dataframe
 
+    def _close_position(self, current_price: float, reason: str, extra_log: str = "") -> Dict:
+        self._is_position_open = False
+        pnl = (current_price - self._entry_price) * self._position_size
+        bot_logger.info(
+            f"SELL ({reason}) | {self.symbol} | price={current_price:.2f}"
+            f" | amount={self._position_size:.6f}"
+            f" | pnl={pnl:+.2f} USDT"
+            + extra_log
+        )
+        self._last_signal = "SELL"
+        return {
+            "type": "SELL",
+            "symbol": self.symbol,
+            "price": current_price,
+            "amount": self._position_size,
+            "timestamp": datetime.now().isoformat()
+        }
+
     def calculate_position_size(self, capital: float, current_price: float) -> float:
         """Calculates position size based on capital and risk
         position_size = amount = how many BTC you buy/sell
@@ -160,8 +180,15 @@ class MovingAverageCrossoverStrategy(BaseModel):
         self._last_check_time = datetime.now()
         signal = None
 
+        # Priority: check SL/TP before crossover signals
+        if self._is_position_open and current_price <= self._stop_loss:
+            signal = self._close_position(current_price, "stop-loss", f" | sl={self._stop_loss:.2f}")
+
+        elif self._is_position_open and current_price >= self._take_profit:
+            signal = self._close_position(current_price, "take-profit", f" | tp={self._take_profit:.2f}")
+
         # Buy signal: short MA just crossed above long MA
-        if last_crossover == 2:  # Upward crossing (from -1 to 1)
+        elif last_crossover == 2:  # Upward crossing (from -1 to 1)
             if not self._is_position_open:
                 self._position_size = self.calculate_position_size(capital, current_price)
                 self._entry_price = current_price
@@ -169,6 +196,9 @@ class MovingAverageCrossoverStrategy(BaseModel):
 
                 stop_loss = current_price * (1 - self.stop_loss_pct)
                 take_profit = current_price * (1 + self.take_profit_pct)
+
+                self._stop_loss = stop_loss
+                self._take_profit = take_profit
 
                 bot_logger.info(
                     f"BUY  | {self.symbol} | price={current_price:.2f}"
@@ -193,29 +223,13 @@ class MovingAverageCrossoverStrategy(BaseModel):
                     f"BUY signal skipped — position already open | {self.symbol} | price={current_price:.2f}"
                 )
 
-        # Sell signal: short MA just crossed below long MA
+        # Sell signal: short MA just crossed below long MA (only if SL/TP didn't already fire)
         elif last_crossover == -2:  # Downward crossing (from 1 to -1)
             if self._is_position_open:
-                self._is_position_open = False
-                pnl = (current_price - self._entry_price) * self._position_size
-
-                bot_logger.info(
-                    f"SELL | {self.symbol} | price={current_price:.2f}"
-                    f" | amount={self._position_size:.6f}"
-                    f" | entry={self._entry_price:.2f}"
-                    f" | pnl={pnl:+.2f} USDT"
-                    f" | short_ma={short_ma:.2f} long_ma={long_ma:.2f}"
+                signal = self._close_position(
+                    current_price, "MA crossover",
+                    f" | entry={self._entry_price:.2f} | short_ma={short_ma:.2f} long_ma={long_ma:.2f}"
                 )
-
-                signal = {
-                    "type": "SELL",
-                    "symbol": self.symbol,
-                    "price": current_price,
-                    "amount": self._position_size,
-                    "timestamp": datetime.now().isoformat()
-                }
-
-                self._last_signal = "SELL"
             else:
                 bot_logger.info(
                     f"SELL signal skipped — no open position | {self.symbol} | price={current_price:.2f}"

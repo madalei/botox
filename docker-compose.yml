@@ -15,7 +15,7 @@ services:
       # pgAdmin: host=localhost, port=5433
       - "5433:5432"  # server_host_port:container_port
       # For Hezner server deploy, use
-      #-  "5432:5432"
+      #-  "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U botox_user -d botox"]
       interval: 10s

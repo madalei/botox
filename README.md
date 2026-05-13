@@ -87,6 +87,10 @@ git pull
 docker compose up --build -d`
 ```
 
+#### Swagger on heztner server
+
+```https://46.224.199.1/botox/docs```
+
 #### Local Forward DB ports 
 
 docker-compose file on server side should contain: 

@@ -4,7 +4,7 @@ from app.bots.strategies.moving_average_crossover import MovingAverageCrossoverS
 from app.models.bot import Bot
 
 STRATEGY_REGISTRY = {
-  "MovingAVG-crossOver": MovingAverageCrossoverStrategy,
+  "MovingAverageCrossoverStrategy": MovingAverageCrossoverStrategy,
  # "RSIStrategy": RSIStrategy,
 }
 

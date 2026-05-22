@@ -23,7 +23,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
     #   This way, the strategy is more self-contained and can be reused across different bots without needing to pass the exchange each time.
 
     # Parameters you want to store in JSONB
-    name: str = "MovingAVG-crossOver"
+    name: str = "MovingAverageCrossoverStrategy"
     symbol: str = "BTC/USDT"
     timeframe: str = "1h"
     short_window: int = 20 # avg of last 20 hours

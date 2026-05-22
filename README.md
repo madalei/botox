@@ -30,6 +30,10 @@ Server should run at `http://127.0.0.1:8000/`
 
 Interactive doc `http://127.0.0.1:8000/docs` 
 
+### Run tests
+
+`cd backend && pytest`
+
 
 ### Start the Database
 
@@ -89,7 +93,8 @@ docker compose up --build -d`
 
 #### Swagger on heztner server
 
-```https://46.224.199.1/botox/docs```
+See ~/.ssh/config for the IP
+```https://**.***.***.*/botox/docs```
 
 #### Local Forward DB ports 
 

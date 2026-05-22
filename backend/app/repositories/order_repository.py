@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from pydantic import UUID4
 from pydantic.v1 import UUID1
@@ -88,3 +88,8 @@ class OrderRepository:
         self.db.refresh(order)
 
         return order
+
+
+
+    def get_orders_by_bot_id(self, bot_id: str) -> list[type[Order]]:
+        return self.db.query(Order).filter(Order.bot_id == bot_id).all()

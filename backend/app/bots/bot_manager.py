@@ -1,6 +1,8 @@
 import asyncio
 from typing import Dict
 from app.bots.base import BaseBot, BotStatus
+from app.bots.bot_factory import build_bot_from_orm
+from app.infrastructure.adapters.database import SessionLocal
 from app.repositories.bot_repository import BotRepository
 from app.services.logging import bot_logger
 
@@ -30,12 +32,17 @@ class BotManager:
     #     bot = self._get_bot(bot_id)
     #     await bot.stop()
 
-    # async def restart_bot(self, bot_id: str):
-    #     bot = self._get_bot(bot_id)
-    #     await bot.stop()
-    #     await asyncio.sleep(1)
-    #     await bot.start(self.exchange, self.order_service)
-    #
+    async def restart_db_bot(self, bot_id: str):
+
+        # Todo Check if bot is already running (but already check by register_bot)
+
+        with SessionLocal() as db: # the session is always closed when the with block exits
+            bot = BotRepository(db).get_bot_by_id(bot_id)
+        # Build a BaseBot instance from the DB model
+        base_bot = build_bot_from_orm(bot)
+        # Register and Start it
+        self.register_bot(base_bot)
+        await self.start_bot(base_bot.bot_id)
 
 
     def list_running_bots(self):

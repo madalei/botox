@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from aiohttp import payload
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -27,6 +27,9 @@ class StrategyParams(BaseModel):
     check_interval: int = Field(default=900, description="Interval in seconds between strategy ticks")
     stop_loss_pct: float = Field(default=0.02, gt=0, le=1, description="Stop loss percentage (0–1)")
     take_profit_pct: float = Field(default=0.04, gt=0, le=1, description="Take profit percentage (0–1)")
+
+def get_bot_manager(request: Request):
+    return request.app.state.bot_manager
 
 @router.post("/bots")
 async def create_bots( strategy_params: StrategyParams,
@@ -67,3 +70,16 @@ async def create_bots( strategy_params: StrategyParams,
         "created_at": db_bot.created_at
     }
 
+@router.post("/bots/{bot_id}/restart")
+async def restart_bot(bot_id: str, bot_manager: BotManager = Depends(get_bot_manager)):
+    """
+    Restart a bot existing in db
+    """
+    # Todo have a better exception management through all my api
+    try:
+        await bot_manager.restart_db_bot(bot_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    all_running_bots = bot_manager.list_running_bots()
+    return next((b for b in all_running_bots if b["bot_id"] == bot_id), None)

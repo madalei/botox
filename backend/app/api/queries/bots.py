@@ -29,10 +29,17 @@ def get_bots(bot_repository: BotRepository = Depends(bot_repository_singleton)):
     """
     return bot_repository.get_all_bots()
 
-
 @router.get("/bots/running", response_model=List[RunningBot])
 def get_running_bots(bot_manager: BotManager = Depends(get_bot_manager)):
     """
     Returns all currently running bots.
     """
     return bot_manager.list_running_bots()
+
+
+@router.get("/bots/{bot_id}")
+def get_bots(bot_id: str, bot_repository: BotRepository = Depends(bot_repository_singleton)):
+    """
+    Returns bots from DB
+    """
+    return bot_repository.get_bot_by_id(bot_id)

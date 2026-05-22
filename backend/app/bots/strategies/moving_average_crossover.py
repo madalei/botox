@@ -24,6 +24,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
 
     # Parameters you want to store in JSONB
     name: str = "MovingAverageCrossoverStrategy"
+    designation: str = "Default"
     symbol: str = "BTC/USDT"
     timeframe: str = "1h"
     short_window: int = 20 # avg of last 20 hours

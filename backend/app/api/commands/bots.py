@@ -21,6 +21,7 @@ def bot_repository_singleton(db: Session = Depends(get_db)) -> BotRepository:
 
 class StrategyParams(BaseModel):
     symbol: str = Field(default="BTC/USDT", description="Trading pair symbol")
+    designation: str = Field(default="default", description="Param configurations style (default, aggressive, wide,..)")
     timeframe: str = Field(default="1h", description="Candlestick timeframe")
     short_window: int = Field(default=20, ge=1, description="Short moving average window")
     long_window: int = Field(default=50, ge=1, description="Long moving average window")

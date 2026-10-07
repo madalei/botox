@@ -38,6 +38,8 @@ services:
       BINANCE_API_KEY_SANDBOX: ${BINANCE_API_KEY_SANDBOX}
       BINANCE_API_SECRET_SANDBOX: ${BINANCE_API_SECRET_SANDBOX}
       ROOT_PATH: ${ROOT_PATH}
+      # Comma-separated frontend origins allowed by CORS (defaults to http://localhost:5173)
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       LOG_DIR: /app/logs
     volumes:
       # Logs are written here inside the container and stored on the host at ./logs/

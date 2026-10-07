@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import router
 from app.config import applicationSettings
 from app.infrastructure.adapters.binance_adapter import BinanceAdapter
@@ -35,6 +36,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Botox API", lifespan=lifespan, root_path=applicationSettings.root_path)
+
+# Allow the React frontend (different origin/port) to call the API from the browser
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=applicationSettings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Importer toutes les routes définies dans router.py
 app.include_router(router)

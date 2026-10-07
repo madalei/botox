@@ -32,7 +32,24 @@ Interactive doc `http://127.0.0.1:8000/docs`
 
 ### Run tests
 
-`cd backend && pytest`
+`cd backend && pip install -r requirements-dev.txt && pytest`
+
+
+### Run the frontend app
+
+The backoffice is a React + TypeScript app built with Vite, styled with Tailwind CSS + shadcn/ui, and fetching the API with TanStack Query. Node 20+ is required.
+
+``cd frontend``
+
+``npm install``
+
+``npm run dev``
+
+Frontend should run at `http://localhost:5173/` and calls the backend at `http://localhost:8000` by default.
+To target another backend (e.g. Docker on port 8001), create `frontend/.env.local` with `VITE_API_URL=http://localhost:8001`.
+The backend only accepts browser calls from origins listed in `CORS_ORIGINS` (default `http://localhost:5173`).
+
+Add a shadcn/ui component: ``npx shadcn@latest add <component>`` (e.g. `dialog`, `select`)
 
 
 ### Start the Database

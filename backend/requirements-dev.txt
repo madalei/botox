@@ -3,3 +3,4 @@ pytest
 pytest-asyncio>=0.23.0
 
 pytest-cov
+httpx<0.28  # 0.28 breaks TestClient of fastapi 0.104

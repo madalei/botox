@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     sandbox_mode: bool = os.getenv("USE_SANDBOX", "False") == "True"
     environment: str = os.getenv("ENVIRONMENT", "development")
     root_path: str = os.getenv("ROOT_PATH", "")
+    # Comma-separated list of frontend origins allowed to call the API (default: Vite dev server)
+    cors_origins: list[str] = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        if origin.strip()
+    ]
 
     @property
     def binance_keys(self) -> APIKeyPair:

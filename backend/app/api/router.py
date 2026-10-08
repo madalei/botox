@@ -3,7 +3,7 @@ from os import system
 from fastapi import APIRouter
 from . import commands, queries
 from app.api.queries import binance, coinbase
-from app.api.queries import bots
+from app.api.queries import bots, orders
 from app.api.commands import bots
 from app.config import applicationSettings
 
@@ -19,3 +19,5 @@ if applicationSettings.exchange == "binance":
 else:
     router.include_router(queries.coinbase.router, tags=["queries"])
 #router.include_router(adapters.router, prefix="/system", tags=["system"])
+
+router.include_router(queries.orders.router, tags=["queries"])

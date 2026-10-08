@@ -2,10 +2,10 @@ from fastapi import APIRouter, HTTPException, Path, Request
 
 router = APIRouter()
 
-SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "JPY"]
+SUPPORTED_CURRENCIES = ["EUR", "USD", "USDC", "GBP"]
 
 
-@router.get("/binance/btc/{currency}/price")
+@router.get("/coinbase/btc/{currency}/price")
 async def get_price(request: Request,
                     currency: str = Path(..., title="Fiat Currency", description="Fiat currency to compare BTC against",
                                          enum=SUPPORTED_CURRENCIES)):
@@ -16,10 +16,10 @@ async def get_price(request: Request,
 
     currency = currency.upper()
     supported_currencies = {
-        "USD": "BTC/USDT",
         "EUR": "BTC/EUR",
-        "GBP": "BTC/GBP",
-        "JPY": "BTC/JPY"
+        "USD": "BTC/USD",
+        "USDC": "BTC/USDC",
+        "GBP": "BTC/GBP"
     }
 
     if currency not in supported_currencies:
@@ -28,12 +28,12 @@ async def get_price(request: Request,
     price = await exchange.get_price(symbol=supported_currencies[currency])
     return {"symbol": supported_currencies[currency], "price": price}
 
-@router.get("/binance/ohlcv")
+@router.get("/coinbase/ohlcv")
 async def get_ohlcv(request: Request):
     """
-    Get OHLCV candels in USDT: [timestamp, open, high, low, close, volume]
+    Get OHLCV candels in EUR: [timestamp, open, high, low, close, volume]
     """
     exchange = request.app.state.exchange
 
-    ohlcv = await exchange.fetch_ohlcv(symbol="BTC/USDT")
-    return {"symbol": "BTC/USDT", "ohlcv": ohlcv}
+    ohlcv = await exchange.fetch_ohlcv(symbol="BTC/EUR")
+    return {"symbol": "BTC/EUR", "ohlcv": ohlcv}

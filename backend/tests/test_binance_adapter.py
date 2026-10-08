@@ -11,6 +11,8 @@ async def test_market_buy_on_testnet():
     load_dotenv(".env.test")
     api_key = os.getenv("TESTNET_API_KEY")
     secret = os.getenv("TESTNET_SECRET")
+    if not api_key or not secret:
+        pytest.skip("TESTNET_API_KEY / TESTNET_SECRET not set in .env.test (Binance testnet keys)")
 
     exchange = BinanceAdapter(api_key, secret, sandbox=True)
 

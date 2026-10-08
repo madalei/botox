@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from app.repositories.order_repository import OrderRepository
 from app.services.order_service import OrderService
-from app.infrastructure.adapters.binance_adapter import BinanceAdapter
+from app.infrastructure.adapters.coinbase_adapter import CoinbaseAdapter
 from app.models.order import Order
 from tests.factories.bot_factory import create_bot_in_db
 from tests.factories.order_factory import build_order
@@ -16,9 +16,10 @@ async def test_full_order_execution(test_db):
 
     # Simulate BaseBot.run() flow where an order is created and executed after a signal is generated
 
-    exchange = BinanceAdapter(
-        os.getenv("TESTNET_API_KEY"),
-        os.getenv("TESTNET_SECRET"),
+    # sandbox=True → paper trading: live Coinbase prices, orders are simulated
+    exchange = CoinbaseAdapter(
+        os.getenv("COINBASE_API_KEY_NAME"),
+        os.getenv("COINBASE_API_PRIVATE_KEY"),
         sandbox=True
     )
 
@@ -54,7 +55,7 @@ async def test_full_order_execution(test_db):
     assert db_order.side == "BUY"
     assert db_order.status == "PENDING"
 
-    # 3. execute order, which should call BinanceAdapter
+    # 3. execute order, which should call CoinbaseAdapter
     executed_order = await order_service.execute_order(db_order.id)
     assert db_order.status == "EXECUTED"
 

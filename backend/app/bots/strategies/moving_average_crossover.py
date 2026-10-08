@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, PrivateAttr
 
-from app.infrastructure.adapters.binance_adapter import BinanceAdapter
 from app.infrastructure.adapters.market_data_provider_interface import MarketDataProviderInterface
 from app.models.order import Order
 from app.services.logging import bot_logger
@@ -18,14 +17,14 @@ class MovingAverageCrossoverStrategy(BaseModel):
     Sell when the short moving average crosses below the long moving average.
     """
 
-    # TODO: the exchange platform (e.g. Binance) should be initialized in the strategy constructor
+    # TODO: the exchange platform (e.g. Coinbase) should be initialized in the strategy constructor
     #   and stored as an attribute, instead of being passed as a parameter to the generate_signals method.
     #   This way, the strategy is more self-contained and can be reused across different bots without needing to pass the exchange each time.
 
     # Parameters you want to store in JSONB
     name: str = "MovingAverageCrossoverStrategy"
     designation: str = "Default"
-    symbol: str = "BTC/USDT"
+    symbol: str = "BTC/EUR"
     timeframe: str = "1h"
     short_window: int = 20 # avg of last 20 hours
     long_window: int = 50  # avg of last 50 hours
@@ -68,7 +67,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
     _stop_loss: float = PrivateAttr(default=0.0)
     _take_profit: float = PrivateAttr(default=0.0)
 
-    # async def get_historical_data(self, exchange: BinanceAdapter, limit: int = 250) -> pandas.DataFrame:
+    # async def get_historical_data(self, exchange: CoinbaseAdapter, limit: int = 250) -> pandas.DataFrame:
     #     """
     #     Return a DataFrame containing historical market data of OHLCV (Open, High, Low, Close, Volume) for the
     #     configured trading symbol and timeframe.
@@ -129,7 +128,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
         bot_logger.info(
             f"SELL ({reason}) | {self.symbol} | price={current_price:.2f}"
             f" | amount={self._position_size:.6f}"
-            f" | pnl={pnl:+.2f} USDT"
+            f" | pnl={pnl:+.2f} {self.symbol.split('/')[1]}"
             + extra_log
         )
         self._last_signal = "SELL"
@@ -143,7 +142,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
 
     def calculate_position_size(self, capital: float, current_price: float) -> float:
         """Calculates position size based on capital and risk
-        amount_to_spend = capital × risk_per_trade  (ex: 1000 × 0.01 = 10 USDT)
+        amount_to_spend = capital × risk_per_trade  (ex: 1000 × 0.01 = 10 EUR)
         position_size   = amount_to_spend / price   (ex: 10 / 70000 = 0.000142 BTC)
         """
         amount_to_spend = capital * self.risk_per_trade

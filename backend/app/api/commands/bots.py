@@ -20,7 +20,7 @@ def bot_repository_singleton(db: Session = Depends(get_db)) -> BotRepository:
     return BotRepository(db)
 
 class StrategyParams(BaseModel):
-    symbol: str = Field(default="BTC/USDT", description="Trading pair symbol")
+    symbol: str = Field(default="BTC/EUR", description="Trading pair symbol")
     designation: str = Field(default="default", description="Param configurations style (default, aggressive, wide,..)")
     timeframe: str = Field(default="1h", description="Candlestick timeframe")
     short_window: int = Field(default=20, ge=1, description="Short moving average window")
@@ -51,7 +51,7 @@ async def create_bots( strategy_params: StrategyParams,
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Todo generate a more user-friendly bot_id (e.g. "BTCUSDT_1h_20240601_120000")
+    # Todo generate a more user-friendly bot_id (e.g. "BTCEUR_1h_20240601_120000")
     #   and move it to bot constructor
     bot_id = f"BOT_{timestamp}"
 

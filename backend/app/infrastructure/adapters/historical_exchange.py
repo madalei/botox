@@ -14,7 +14,7 @@ class HistoricalExchange(MarketDataProviderInterface):
         return False
 
     async def get_history(self, symbol: str, timeframe: str, limit=None) -> pd.DataFrame:
-        # replace fetch_ohlcv(...) in binance adapter
+        # replace fetch_ohlcv(...) in coinbase adapter
         # Time simulated with cursor
         df = self.df.iloc[:self.cursor]
 

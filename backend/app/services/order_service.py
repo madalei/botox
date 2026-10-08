@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.infrastructure.adapters.binance_adapter import BinanceAdapter
+from app.infrastructure.adapters.coinbase_adapter import CoinbaseAdapter
 from app.models.order import Order
 from app.repositories.order_repository import OrderRepository
 from app.services.logging import bot_logger
@@ -12,7 +13,7 @@ class OrderService:
     Handles order execution.
     """
 
-    def __init__(self, exchange: BinanceAdapter = None, repository: OrderRepository | None = None):
+    def __init__(self, exchange: BinanceAdapter | CoinbaseAdapter = None, repository: OrderRepository | None = None):
         self.repository = repository or OrderRepository() # creates its own session internally
         self.exchange = exchange  # Can be None if no exchange configured
 
@@ -43,7 +44,7 @@ class OrderService:
                     exchange_order = await self.exchange.place_market_sell(order.symbol, order.amount)
             except Exception as e:
                 status = "FAILED"
-                bot_logger.error(f"Binance Order Execution failed: {e}")
+                bot_logger.error(f"{type(self.exchange).__name__} Order Execution failed: {e}")
 
             updated_order = self.repository.update_order(
                 id=order.id,

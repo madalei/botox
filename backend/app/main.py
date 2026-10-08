@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import router
 from app.config import applicationSettings
-from app.infrastructure.adapters.binance_adapter import BinanceAdapter
+from app.infrastructure.adapters.exchange_factory import create_exchange
 from app.services.order_service import OrderService
 from app.bots.bot_manager import BotManager
 
@@ -15,11 +15,8 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for startup and shutdown events.
     """
     # Startup
-    exchange = BinanceAdapter(
-        api_key=applicationSettings.binance_keys.api_key,
-        secret=applicationSettings.binance_keys.secret,
-        sandbox=applicationSettings.sandbox_mode
-    )
+    # Exchange (Coinbase or Binance) is selected by the EXCHANGE env var
+    exchange = create_exchange(applicationSettings)
     order_service = OrderService(exchange=exchange)
     bot_manager = BotManager(exchange=exchange, order_service=order_service)
 

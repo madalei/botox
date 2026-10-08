@@ -35,8 +35,14 @@ services:
       # "db" is the hostname of the Postgres container (= service name above)
       # From my debug config, use localhost:5433 instead
       DATABASE_URL: postgresql://botox_user:${DB_PASSWORD}@db:5432/botox
-      BINANCE_API_KEY_SANDBOX: ${BINANCE_API_KEY_SANDBOX}
-      BINANCE_API_SECRET_SANDBOX: ${BINANCE_API_SECRET_SANDBOX}
+      # Exchange used by the bots: "coinbase" (default) or "binance"
+      EXCHANGE: ${EXCHANGE:-coinbase}
+      COINBASE_API_KEY_NAME: ${COINBASE_API_KEY_NAME:-}
+      COINBASE_API_PRIVATE_KEY: ${COINBASE_API_PRIVATE_KEY:-}
+      BINANCE_API_KEY_SANDBOX: ${BINANCE_API_KEY_SANDBOX:-}
+      BINANCE_API_SECRET_SANDBOX: ${BINANCE_API_SECRET_SANDBOX:-}
+      BINANCE_API_KEY_PRODUCTION: ${BINANCE_API_KEY_PRODUCTION:-}
+      BINANCE_API_SECRET_PRODUCTION: ${BINANCE_API_SECRET_PRODUCTION:-}
       ROOT_PATH: ${ROOT_PATH}
       # Comma-separated frontend origins allowed by CORS (defaults to http://localhost:5173)
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}

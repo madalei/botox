@@ -5,9 +5,9 @@ from app.models.order import Order
 
 def build_order(
     side="BUY",
-    symbol="BTC/USDT",
+    symbol="BTC/EUR",
     bot_id="test_bot_default",
-    amount=0.0002, # 10 dollars at 50k for BTC
+    amount=0.0002, # 10 euros at 50k for BTC
     price=30000,
     stop_loss=None,
     take_profit=None,

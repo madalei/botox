@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { apiGet, type RunningBot } from '@/lib/api'
+import { apiGet } from '@/lib/api'
+import type { RunningBot } from '@/types/bot'
 
 export function RunningBotsPage() {
   const { data: bots, isPending, error } = useQuery({

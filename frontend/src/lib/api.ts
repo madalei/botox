@@ -9,11 +9,3 @@ export async function apiGet<T>(path: string): Promise<T> {
   }
   return response.json() as Promise<T>
 }
-
-// Mirrors RunningBot in backend/app/api/queries/bots.py
-export type RunningBot = {
-  bot_id: string
-  status: string
-  strategy: string
-  params: Record<string, unknown>
-}

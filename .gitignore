@@ -19,3 +19,8 @@ backend/.env
 
 # Local research notes
 backend/docs/
+
+backend/tests/data
+
+logs/
+backend/logs/

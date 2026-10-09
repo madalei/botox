@@ -11,7 +11,7 @@ build/
 .idea/
 
 # dotenv
-backend/.env
+.env
 
 .venv/
 

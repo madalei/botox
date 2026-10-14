@@ -20,7 +20,7 @@ build/
 # Local research notes
 backend/docs/
 
-backend/tests/data
+backend/tests/backtests/*/data
 
 logs/
 backend/logs/

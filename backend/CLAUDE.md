@@ -12,10 +12,10 @@ uvicorn app.main:app --reload
 pytest
 
 # Run a single test file
-pytest tests/test_backtest_moving_avg_strategy.py
+pytest tests/backtests/coinbase/test_backtest_moving_avg_strategy.py
 
 # Run a single test by name
-pytest tests/test_backtest_moving_avg_strategy.py::test_bot_backtest
+pytest tests/backtests/coinbase/test_backtest_moving_avg_strategy.py::test_backtest_1h_2024
 
 # Run tests with coverage
 pytest --cov
@@ -64,7 +64,9 @@ PostgreSQL with SQLAlchemy ORM (no Alembic migrations yet — raw SQL migration 
 ### Testing Patterns
 
 - `tests/conftest.py` — `test_db` fixture wraps each test in a transaction that is rolled back, keeping the DB clean.
-- Backtesting tests use `HistoricalExchange` with CSV candle data from `tests/data/` (sourced from `data.binance.vision`, historical candles only, live trading uses the exchange selected by `EXCHANGE`).
+- Backtests live in `tests/backtests/`: the exchange-agnostic engine (`engine.py`: `run_backtest()`, `compute_pnl(orders, fee_rate)` net of fees) plus one folder per exchange, `coinbase/` (used) and `binance/` (unused for now). Each has a `market.py` (CSV loader, `load_year()`, taker `FEE_RATE`), its `data/` CSVs and its tests. Historical candles only; live trading uses the exchange selected by `EXCHANGE`.
+- Coinbase candles are downloaded into `tests/backtests/coinbase/data/` with `python scripts/download_coinbase_candles.py --symbol BTC/EUR --timeframe 1h --start 2022-01 --end 2026-09` (no 4h on Coinbase, use 6h) (public endpoint, no API key). They have a header row, unlike the Binance ones (from `data.binance.vision`).
+- The parameter sweeps (`tests/backtests/coinbase/test_*_params_sweep.py`, built on `coinbase/sweep.py`; Binance has older ones) are slow and excluded in `pytest.ini`; run them with `-o addopts=""`.
 - `@pytest.mark.asyncio` is required for async test functions.
 
 ### Environment

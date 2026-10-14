@@ -4,27 +4,19 @@ and print a ranked comparison table.
 
 StrategyParams mirrors the POST /bots payload (app/api/commands/bots.py).
 
-Datasets are built by concatenating monthly CSV files from tests/data/.
+Datasets are built by concatenating monthly CSV files from tests/backtests/binance/data/.
 Missing months are skipped automatically — the label shows how many months
 were actually loaded, so you know how complete each dataset is.
 """
-from pathlib import Path
 
-import pandas as pd
 import pytest
 from app.bots.strategies.moving_average_crossover import MovingAverageCrossoverStrategy
-from app.infrastructure.adapters.historical_exchange import HistoricalExchange
+from tests.backtests.binance.market import FEE_RATE, load_year
+from tests.backtests.engine import compute_pnl, run_backtest
 
 import logging
 
 logging.disable(logging.CRITICAL)  # suppress all logs for this test
-
-BINANCE_KLINE_COLUMNS = [
-    "timestamp", "open", "high", "low", "close", "volume",
-    "close_time", "quote_volume", "trades", "taker_base", "taker_quote", "ignore",
-]
-
-DATA_DIR = Path(__file__).parent / "data"
 
 # ---------------------------------------------------------------------------
 # Strategy configurations — mirrors POST /bots StrategyParams
@@ -39,7 +31,7 @@ STRATEGY_CONFIGS = [
     {"name": "4h 9/21",         "timeframe": "4h", "short_window": 9,  "long_window": 21,  "stop_loss_pct": 0.02, "take_profit_pct": 0.04},
 ]
 
-# results:
+# results (before fees were included in P&L):
 #   ┌─────────────────┬──────┬───────┬──────┬──────┬───────┐
 #   │     Config      │ 2022 │ 2023  │ 2024 │ 2025 │ Total │
 #   ├─────────────────┼──────┼───────┼──────┼──────┼───────┤
@@ -64,61 +56,6 @@ YEARLY_DATASETS = [
     {"symbol": "BTCUSDT", "timeframe": "1h", "year": 2026},
     {"symbol": "BTCUSDT", "timeframe": "4h", "year": 2025},
 ]
-
-
-def load_year(symbol: str, timeframe: str, year: int) -> tuple[pd.DataFrame, list[int]]:
-    """
-    Concatenate all available monthly CSV files for the given symbol/timeframe/year.
-    Returns (dataframe, list_of_loaded_months).
-    Missing months are silently skipped.
-    """
-    frames = []
-    loaded_months = []
-    for month in range(1, 13):
-        path = DATA_DIR / f"{symbol}-{timeframe}-{year}-{month:02d}.csv"
-        if path.exists():
-            frames.append(pd.read_csv(path, names=BINANCE_KLINE_COLUMNS))
-            loaded_months.append(month)
-    if not frames:
-        return pd.DataFrame(), []
-    return pd.concat(frames, ignore_index=True), loaded_months
-
-
-async def run_backtest(candles: pd.DataFrame, strategy: MovingAverageCrossoverStrategy, capital: float = 1000.0):
-    exchange = HistoricalExchange(candles)
-    orders = []
-    while exchange.tick():
-        signal = await strategy.generate_signals(exchange, capital=capital)
-        if signal:
-            orders.append(signal)
-
-    # If the backtest ends with an open position (last BUY has no matching SELL),
-    # close it at the final candle's close price so it is included in P&L.
-    buys = [o for o in orders if o.side == "BUY"]
-    sells = [o for o in orders if o.side == "SELL"]
-    if len(buys) > len(sells):
-        from app.models.order import Order
-        from datetime import datetime
-        last_price = float(candles.iloc[-1]["close"])
-        orders.append(Order(
-            bot_id="",
-            symbol=buys[-1].symbol,
-            side="SELL",
-            amount=buys[-1].amount,
-            price=last_price,
-            created_at=datetime.now(),
-        ))
-
-    return orders
-
-
-def compute_pnl(orders):
-    pnl = 0.0
-    buys = [o for o in orders if o.side == "BUY"]
-    sells = [o for o in orders if o.side == "SELL"]
-    for buy, sell in zip(buys, sells):
-        pnl += (float(sell.price) - float(buy.price)) * float(buy.amount)
-    return pnl, len(buys), len(sells)
 
 
 @pytest.mark.asyncio
@@ -146,7 +83,9 @@ async def test_param_sweep():
             )
 
             orders = await run_backtest(candles, strategy)
-            pnl, n_buys, n_sells = compute_pnl(orders)
+            pnl, fees, completed = compute_pnl(orders, FEE_RATE)
+            n_buys = sum(o.side == "BUY" for o in orders)
+            n_sells = sum(o.side == "SELL" for o in orders)
 
             results.append({
                 "dataset":  label,
@@ -154,7 +93,8 @@ async def test_param_sweep():
                 "sl/tp":    f"{cfg['stop_loss_pct']*100:.1f}%/{cfg['take_profit_pct']*100:.1f}%",
                 "buys":     n_buys,
                 "sells":    n_sells,
-                "completed":min(n_buys, n_sells),
+                "completed":completed,
+                "fees":     fees,
                 "pnl":      pnl,
             })
 
@@ -167,15 +107,15 @@ async def test_param_sweep():
             print(f"\n{'='*72}")
             print(f"  {current_dataset}")
             print(f"{'='*72}")
-            print(f"  {'Config':<22} {'SL/TP':<10} {'Buys':<6} {'Sells':<6} {'Done':<6} {'P&L':>10}")
-            print(f"  {'-'*22} {'-'*10} {'-'*6} {'-'*6} {'-'*6} {'-'*10}")
+            print(f"  {'Config':<22} {'SL/TP':<10} {'Buys':<6} {'Sells':<6} {'Done':<6} {'Fees':>8} {'P&L (net)':>10}")
+            print(f"  {'-'*22} {'-'*10} {'-'*6} {'-'*6} {'-'*6} {'-'*8} {'-'*10}")
 
         print(
             f"  {r['config']:<22} {r['sl/tp']:<10} "
-            f"{r['buys']:<6} {r['sells']:<6} {r['completed']:<6} "
+            f"{r['buys']:<6} {r['sells']:<6} {r['completed']:<6} {r['fees']:>8.2f} "
             f"{r['pnl']:>+10.2f} USDT"
         )
 
-    assert len(results) > 0, "No results — check that CSV files exist in tests/data/"
+    assert len(results) > 0, "No results — check that CSV files exist in tests/backtests/binance/data/"
     for r in results:
         assert r["buys"] >= 0 and r["sells"] >= 0

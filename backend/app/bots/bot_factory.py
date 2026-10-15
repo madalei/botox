@@ -13,4 +13,6 @@ def build_bot_from_orm(db_bot: Bot) -> BaseBot:
   if not strategy_class:
       raise ValueError(f"Unknown strategy: {db_bot.strategy}")
   strategy = strategy_class(**db_bot.params)
-  return BaseBot(bot_id=db_bot.id, strategy=strategy)
+  # Position sauvegardée (achat en cours, stop suiveur...) : sans elle, les BTC achetés avant le redémarrage ne seraient jamais revendus
+  strategy.load_state(db_bot.state)
+  return BaseBot(bot_id=db_bot.id, strategy=strategy, check_interval=db_bot.params.get("check_interval", 900))

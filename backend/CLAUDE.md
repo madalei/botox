@@ -40,11 +40,11 @@ POST /bots → BotManager.start_bot() → BaseBot.run() [loop]
 
 **`app/main.py`** — FastAPI lifespan builds the exchange adapter with `create_exchange()` (`app/infrastructure/adapters/exchange_factory.py`, driven by `EXCHANGE`), then `OrderService`, and `BotManager` stored in `app.state`. All bots share these singletons.
 
-**`app/bots/base.py` (`BaseBot`)** — The trading loop. Each bot runs `tick()` every `check_interval` seconds (default 900s / 15min). `tick()` calls strategy → persists order → executes order.
+**`app/bots/base.py` (`BaseBot`)** — The trading loop. Each bot runs `tick()` every `check_interval` seconds (default 900s / 15min). `tick()` calls strategy → persists order → executes order. If the order FAILED on the exchange, the strategy state is rolled back; any state change is saved to `bots.state` through `save_state`.
 
-**`app/bots/bot_manager.py` (`BotManager`)** — In-memory registry of running bots. Bots are started as asyncio tasks and are lost on restart (not re-hydrated from DB).
+**`app/bots/bot_manager.py` (`BotManager`)** — Registry of running bots (asyncio tasks). On startup (`restore_bots()` in the lifespan), bots with status `R` and a saved `state` are rebuilt by `build_bot_from_orm` with their open position and `check_interval` (stored in `params`). Bots without state (created before that column) are not auto-restarted, use `POST /bots/{id}/restart`. `POST /bots/{id}/stop` sets status `S` (an open position is not sold).
 
-**`app/bots/strategies/moving_average_crossover.py` (`MovingAverageCrossoverStrategy`)** — A Pydantic `BaseModel` (not an ABC subclass, unlike `BaseStrategy` in `base.py`). Detects MA crossovers from OHLCV data and returns an `Order` object or `None`. Runtime state (position open, entry price) is stored in Pydantic `PrivateAttr`. Optional `trend_window` (0 = off) only allows BUYs above that moving average. Optional `trailing_stop_pct` (0 = off) raises the stop loss below the highest price since entry, from the next candle on; `take_profit_pct = 0` disables the take profit. `buy_while_trend=True` buys on any candle where short MA > long MA (not only on the crossover); `exit_on_crossover=False` leaves exits to the stops. Stop loss / take profit are checked against the candle low / high (exit at the level, or at the open on a gap; the entry candle only uses its close).
+**`app/bots/strategies/moving_average_crossover.py` (`MovingAverageCrossoverStrategy`)** — A Pydantic `BaseModel` (not an ABC subclass, unlike `BaseStrategy` in `base.py`). Detects MA crossovers from OHLCV data and returns an `Order` object or `None`. Runtime state (position open, entry price, stops, highest price) is stored in Pydantic `PrivateAttr`, exported / reloaded as JSON with `get_state()` / `load_state()`. Optional `trend_window` (0 = off) only allows BUYs above that moving average. Optional `trailing_stop_pct` (0 = off) raises the stop loss below the highest price since entry, from the next candle on; `take_profit_pct = 0` disables the take profit. `buy_while_trend=True` buys on any candle where short MA > long MA (not only on the crossover); `exit_on_crossover=False` leaves exits to the stops. Stop loss / take profit are checked against the candle low / high (exit at the level, or at the open on a gap; the entry candle only uses its close).
 
 **`app/infrastructure/adapters/market_data_provider_interface.py` (`MarketDataProviderInterface`)** — Abstract interface implemented by both:
 - `CoinbaseAdapter` — live exchange, async `get_history()` calls Coinbase API. Coinbase has no testnet: with `USE_SANDBOX=True` it runs in paper trading mode (live prices, orders simulated, never sent). Supported timeframes: 1m, 5m, 15m, 30m, 1h, 2h, 6h, 1d. `get_history()` caps `limit` at 300 (Coinbase max per request; above it, the candles after `since` would be old ones, not the latest).
@@ -59,7 +59,7 @@ POST /bots → BotManager.start_bot() → BaseBot.run() [loop]
 
 ### Database
 
-PostgreSQL with SQLAlchemy ORM (no Alembic migrations yet — raw SQL migration in `app/infrastructure/migrations/`). Tables: `bots`, `orders`, `bot_logs`.
+PostgreSQL with SQLAlchemy ORM (no Alembic migrations yet — `app/infrastructure/migrations/schema.sql` only runs when the Docker Postgres volume is empty). Columns added later are added to existing databases at startup by `upgrade_schema()` (`app/infrastructure/adapters/database.py`, `ADD COLUMN IF NOT EXISTS`), also called by the test `engine` fixture: add new columns there too. Tables: `bots` (with `state` JSONB), `orders`, `bot_logs`.
 
 ### Testing Patterns
 

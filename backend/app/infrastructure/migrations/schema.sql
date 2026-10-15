@@ -63,7 +63,8 @@ CREATE TABLE public.bots (
     strategy text NOT NULL,
     params jsonb NOT NULL,
     status text NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    state jsonb
 );
 
 

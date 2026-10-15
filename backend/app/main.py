@@ -7,6 +7,7 @@ from app.config import applicationSettings
 from app.infrastructure.adapters.exchange_factory import create_exchange
 from app.services.order_service import OrderService
 from app.bots.bot_manager import BotManager
+from app.infrastructure.adapters.database import upgrade_schema
 
 
 @asynccontextmanager
@@ -23,6 +24,10 @@ async def lifespan(app: FastAPI):
     # Store in app.state
     app.state.bot_manager = bot_manager
     app.state.exchange = exchange
+
+    # Base existante : ajoute les nouvelles colonnes (bots.state), puis relance les bots qui tournaient avant l'arrêt
+    upgrade_schema()
+    await bot_manager.restore_bots()
 
     yield  # Application runs here
 

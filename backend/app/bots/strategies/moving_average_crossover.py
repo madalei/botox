@@ -74,7 +74,7 @@ class MovingAverageCrossoverStrategy(BaseModel):
     # | `15m`     | 20       | 50      | 5h vs 12.5h trend |
     # | `4h`      | 20       | 50      | 80h vs 200h trend |
 
-    # Internal runtime state (not stored in DB)
+    # État de la position : sauvegardé en base (colonne bots.state) via get_state() / load_state()
     _is_position_open: bool = PrivateAttr(default=False)
     _entry_price: float = PrivateAttr(default=0.0)
     _position_size: float = PrivateAttr(default=0.0)
@@ -188,6 +188,41 @@ class MovingAverageCrossoverStrategy(BaseModel):
         self._highest_price = max(self._highest_price, candle_high)
         # Le stop ne fait que monter : jamais en dessous du stop loss initial ni du stop précédent
         self._stop_loss = max(self._stop_loss, self._highest_price * (1 - self.trailing_stop_pct))
+
+    def get_state(self) -> Dict:
+        """
+        État de la position, en JSON, pour le sauvegarder en base et le recharger après un redémarrage.
+        Sans lui, un bot redémarré croit ne rien avoir acheté et ne revend jamais les BTC achetés avant.
+        """
+        entry_candle_time = self._entry_candle_time
+        if isinstance(entry_candle_time, (pandas.Timestamp, datetime)):
+            entry_candle_time = entry_candle_time.isoformat()
+        return {
+            "is_position_open": self._is_position_open,
+            "entry_price": float(self._entry_price),
+            "position_size": float(self._position_size),
+            "stop_loss": float(self._stop_loss),
+            "take_profit": float(self._take_profit) if self._take_profit else None,
+            "highest_price": float(self._highest_price),
+            "entry_candle_time": entry_candle_time,
+            "last_signal": self._last_signal,
+        }
+
+    def load_state(self, state: Optional[Dict]):
+        """Recharge un état produit par get_state(). None ou {} = pas de position."""
+        state = state or {}
+        self._is_position_open = state.get("is_position_open", False)
+        self._entry_price = state.get("entry_price", 0.0)
+        self._position_size = state.get("position_size", 0.0)
+        self._stop_loss = state.get("stop_loss", 0.0)
+        self._take_profit = state.get("take_profit")
+        self._highest_price = state.get("highest_price", 0.0)
+        self._last_signal = state.get("last_signal")
+        entry_candle_time = state.get("entry_candle_time")
+        # En live les bougies ont des timestamps pandas : on les reconvertit pour pouvoir les comparer
+        if isinstance(entry_candle_time, str):
+            entry_candle_time = pandas.Timestamp(entry_candle_time)
+        self._entry_candle_time = entry_candle_time
 
     def _close_position(self, current_price: float, reason: str, extra_log: str = "") -> Dict:
         self._is_position_open = False

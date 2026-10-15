@@ -1,6 +1,6 @@
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -23,3 +23,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def upgrade_schema(target_engine=None):
+    """
+    Ajoute les colonnes créées après la première mise en place de la base.
+    Les scripts de migrations/ ne s'exécutent qu'au tout premier démarrage du conteneur Postgres (volume vide) :
+    une base existante est mise à jour ici, à chaque démarrage. IF NOT EXISTS rend l'opération sans effet si c'est déjà fait.
+    """
+    with (target_engine or engine).begin() as connection:
+        connection.execute(text("ALTER TABLE bots ADD COLUMN IF NOT EXISTS state JSONB"))

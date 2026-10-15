@@ -10,10 +10,12 @@ class BotStatus(str, Enum):
     STOPPED = "stopped"
 
 class BaseBot:
-    def __init__(self, bot_id: str, strategy, capital: float = 1000.0, check_interval: int = 900):
+    def __init__(self, bot_id: str, strategy, capital: float = 1000.0, check_interval: int = 900, save_state=None):
         self.bot_id = bot_id
         self.strategy = strategy
         self.capital = capital
+        # save_state(bot_id, state) : sauvegarde l'état de la position en base (branché par BotManager)
+        self.save_state = save_state
         # Todo here maybe some other customisable params
         self.check_interval = check_interval  # seconds, by default, checks every 15 minutes (900 seconds).
         self.status = BotStatus.CREATED
@@ -23,28 +25,43 @@ class BaseBot:
         """
         Execute a single strategy evaluation cycle.
         """
+        # État avant la bougie : si l'ordre échoue sur l'exchange, on y revient (sinon le bot croirait
+        # avoir acheté des BTC qu'il n'a pas, ou avoir vendu des BTC qu'il a encore)
+        state_before = self.strategy.get_state()
+
         # Generate signal/order from strategy
         order_signal = await self.strategy.generate_signals(exchange, self.capital)
 
+        executed_order = None
         if not order_signal:
             bot_logger.info("No signal generated", extra={"bot_id": self.bot_id})
-            return None
+        else:
+            # Log the generated signal
+            bot_logger.info(
+                f"Signal detected: {order_signal.side} "
+                f"{order_signal.amount} {order_signal.symbol} "
+                f"at {order_signal.price}",
+                extra={"bot_id": self.bot_id},
+            )
 
-        # Log the generated signal
-        bot_logger.info(
-            f"Signal detected: {order_signal.side} "
-            f"{order_signal.amount} {order_signal.symbol} "
-            f"at {order_signal.price}",
-            extra={"bot_id": self.bot_id},
-        )
+            order_signal.bot_id = self.bot_id
 
-        order_signal.bot_id = self.bot_id
+            # Persist order to DB
+            db_order = await order_service.create_order(order_signal)
 
-        # Persist order to DB
-        db_order = await order_service.create_order(order_signal)
+            # Execute order via exchange
+            executed_order = await order_service.execute_order(db_order.id)
 
-        # Execute order via exchange
-        executed_order = await order_service.execute_order(db_order.id)
+            if executed_order is None or executed_order.status == "FAILED":
+                bot_logger.error(
+                    f"{order_signal.side} failed on the exchange, position state restored", extra={"bot_id": self.bot_id}
+                )
+                self.strategy.load_state(state_before)
+
+        # Sauvegarde à chaque changement (achat, vente, stop suiveur remonté), pour la retrouver après un redémarrage
+        state_after = self.strategy.get_state()
+        if self.save_state and state_after != state_before:
+            self.save_state(self.bot_id, state_after)
 
         return executed_order
 

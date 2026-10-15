@@ -88,3 +88,16 @@ async def restart_bot(bot_id: str, bot_manager: BotManager = Depends(get_bot_man
 
     all_running_bots = bot_manager.list_running_bots()
     return next((b for b in all_running_bots if b["bot_id"] == bot_id), None)
+
+
+@router.post("/bots/{bot_id}/stop")
+async def stop_bot(bot_id: str, bot_manager: BotManager = Depends(get_bot_manager)):
+    """
+    Arrête un bot : il ne sera plus relancé au redémarrage du serveur.
+    Une position ouverte n'est pas vendue, les BTC restent sur le compte.
+    """
+    try:
+        await bot_manager.stop_bot(bot_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"bot_id": bot_id, "status": "S"}

@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models.order import Base
+from app.infrastructure.adapters.database import upgrade_schema
 
 
 def pytest_configure():
@@ -19,6 +20,8 @@ def pytest_configure():
 def engine():
     engine = create_engine(os.getenv("DATABASE_URL"))
     Base.metadata.create_all(engine)
+    # create_all ne modifie pas une table existante : ajoute les colonnes récentes (bots.state)
+    upgrade_schema(engine)
     yield engine
     # Clean up tables after test (optional - removes all data)
     # Uncomment to drop tables after each test

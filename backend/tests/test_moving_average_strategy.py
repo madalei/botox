@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 import pytest
 from app.bots.strategies.moving_average_crossover import MovingAverageCrossoverStrategy
@@ -195,3 +197,53 @@ async def test_exit_on_crossover_false_keeps_position_on_downward_cross():
     assert [o.side for o in default_orders] == ["BUY", "SELL"]
     assert [o.side for o in hold_orders] == ["BUY"]
 
+
+# --- Sauvegarde / rechargement de la position (redémarrage du serveur) ---------------------------
+
+def reload_through_json(strategy_before: MovingAverageCrossoverStrategy, **params) -> MovingAverageCrossoverStrategy:
+    """Nouvelle instance rechargée depuis l'état sauvegardé, en passant par du JSON comme la colonne bots.state."""
+    restarted = strategy(**params)
+    restarted.load_state(json.loads(json.dumps(strategy_before.get_state())))
+    return restarted
+
+
+@pytest.mark.asyncio
+async def test_trailing_stop_survives_restart():
+    # Même scénario que test_trailing_stop_follows_highest_price, avec un redémarrage entre les bougies 8 et 9 :
+    # le stop suiveur remonté à 104.5 doit être retrouvé, sinon la vente se ferait au stop initial (98)
+    candles = make_candles(CLOSES_WITH_UPWARD_CROSS + [109, 105], {8: {"high": 110}, 9: {"low": 104}})
+    before_restart = trailing_strategy()
+    await replay(candles.iloc[:9], before_restart)
+
+    restarted = reload_through_json(before_restart, take_profit_pct=0, trailing_stop_pct=0.05)
+    exchange = HistoricalExchange(candles)
+    exchange.cursor = len(candles)
+    order = await restarted.generate_signals(exchange)
+
+    assert order.side == "SELL"
+    assert order.price == pytest.approx(104.5)
+    assert order.amount == pytest.approx(before_restart.get_state()["position_size"])
+
+
+@pytest.mark.asyncio
+async def test_restart_on_entry_candle_keeps_ignoring_its_low():
+    # En live les bougies ont des dates pandas : après rechargement, la bougie d'achat doit toujours être reconnue
+    candles = make_candles(CLOSES_WITH_UPWARD_CROSS, {7: {"low": 90}})
+    candles["timestamp"] = pd.date_range("2026-01-01", periods=len(candles), freq="D")
+    before_restart = strategy()
+    await replay(candles, before_restart)
+
+    restarted = reload_through_json(before_restart)
+    exchange = HistoricalExchange(candles)
+    exchange.cursor = len(candles)
+
+    assert await restarted.generate_signals(exchange) is None
+    assert restarted.get_state()["is_position_open"]
+
+
+def test_load_state_none_means_no_position():
+    # Bot créé avant la sauvegarde de l'état (colonne bots.state vide)
+    restarted = strategy()
+    restarted.load_state(None)
+
+    assert restarted.get_state()["is_position_open"] is False

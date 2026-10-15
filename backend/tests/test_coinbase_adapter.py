@@ -83,3 +83,20 @@ async def test_paper_market_buy_with_live_coinbase_prices():
 
     finally:
         await exchange.close()
+
+
+# --- Limite de 300 bougies ----------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_get_history_asks_at_most_300_latest_candles():
+    # 1d 50/200 demande 1000 bougies : au-delà de 300, Coinbase renverrait de vieilles bougies (depuis `since`)
+    exchange = build_adapter(sandbox=True)
+    exchange.client.milliseconds = MagicMock(return_value=1_000_000_000_000)
+    exchange.client.parse_timeframe = MagicMock(return_value=86400)
+    exchange.client.fetch_ohlcv = AsyncMock(return_value=[])
+
+    await exchange.get_history("BTC/EUR", "1d", limit=1000)
+
+    exchange.client.fetch_ohlcv.assert_awaited_once_with(
+        "BTC/EUR", timeframe="1d", since=1_000_000_000_000 - 300 * 86400 * 1000, limit=300
+    )

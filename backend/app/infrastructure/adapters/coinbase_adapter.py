@@ -21,6 +21,8 @@ class CoinbaseAdapter(MarketDataProviderInterface):
     - secret:  the ECDSA private key, e.g. "-----BEGIN EC PRIVATE KEY-----\n...\n-----END EC PRIVATE KEY-----\n"
     """
 
+    MAX_CANDLES_PER_REQUEST = 300
+
     def __init__(self, api_key: str | None, secret: str | None, sandbox: bool = True):
         self.client = ccxt_async.coinbase({
             "apiKey": api_key,
@@ -60,6 +62,10 @@ class CoinbaseAdapter(MarketDataProviderInterface):
                 Coinbase supports: 1m, 5m, 15m, 30m, 1h, 2h, 6h, 1d (no 4h)
         """
         try:
+            # Au-delà de 300, Coinbase renvoie les 300 bougies qui suivent `since`, donc de vieilles bougies et pas
+            # les dernières (ex. 1d avec limit=1000 : des bougies d'il y a ~2 ans). Les moyennes mobiles simples
+            # n'ont besoin que de leurs N dernières bougies : 300 suffisent tant que la plus longue fenêtre est < 300.
+            limit = min(limit, self.MAX_CANDLES_PER_REQUEST)
             since = self.milliseconds() - (limit * self.parse_timeframe(timeframe) * 1000)  # if timeframe = 1h, limit * timeframe = 100 * 1h = 100h = 4.2days
 
             ohlcv = await self.fetch_ohlcv(symbol=symbol, timeframe=timeframe, since=since, limit=limit)

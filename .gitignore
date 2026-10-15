@@ -24,3 +24,4 @@ backend/tests/backtests/*/data
 
 logs/
 backend/logs/
+backend/tests/backtests/reports/

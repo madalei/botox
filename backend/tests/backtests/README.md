@@ -7,6 +7,8 @@ Backtests replay historical candles through a strategy (via `HistoricalExchange`
 ```
 backtests/
 ├── engine.py      # shared: run_backtest(), compute_pnl(orders, fee_rate), assert_alternating_sides()
+├── conftest.py    # saves each test's printed output into reports/
+├── reports/       # <exchange>/<test name>_<date>_<time>.txt (gitignored)
 ├── coinbase/      # exchange used by the bots
 │   ├── market.py  # FEE_RATE (0.60%), load_candles(), load_year() for Coinbase CSVs
 │   ├── data/      # BTC-EUR-1h-2024-01.csv ... (downloaded, see below)
@@ -37,6 +39,10 @@ From `backend/`:
    pytest tests/backtests/coinbase -s
    pytest tests/backtests/coinbase/test_backtest_moving_avg_strategy.py::test_backtest_1h_2024 -s
    ```
+
+## Reports
+
+Every backtest saves what it prints into `tests/backtests/reports/<exchange>/<test name>_<date>_<time>.txt`, with or without `-s`, and even when the test fails. Each run writes a new file, so you can compare runs; delete old ones when you no longer need them. The path is printed after the results (with `-s`).
 
 ## Parameter sweeps
 

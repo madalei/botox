@@ -66,6 +66,7 @@ PostgreSQL with SQLAlchemy ORM (no Alembic migrations yet — raw SQL migration 
 - `tests/conftest.py` — `test_db` fixture wraps each test in a transaction that is rolled back, keeping the DB clean.
 - Backtests live in `tests/backtests/`: the exchange-agnostic engine (`engine.py`: `run_backtest()`, `compute_pnl(orders, fee_rate)` net of fees) plus one folder per exchange, `coinbase/` (used) and `binance/` (unused for now). Each has a `market.py` (CSV loader, `load_year()`, taker `FEE_RATE`), its `data/` CSVs and its tests. Historical candles only; live trading uses the exchange selected by `EXCHANGE`.
 - Coinbase candles are downloaded into `tests/backtests/coinbase/data/` with `python scripts/download_coinbase_candles.py --symbol BTC/EUR --timeframe 1h --start 2022-01 --end 2026-09` (no 4h on Coinbase, use 6h) (public endpoint, no API key). They have a header row, unlike the Binance ones (from `data.binance.vision`).
+- `tests/backtests/conftest.py` saves what each backtest prints into `tests/backtests/reports/<exchange>/<test name>_<date>_<time>.txt` (gitignored).
 - The parameter sweeps (`tests/backtests/coinbase/test_*_params_sweep.py`, built on `coinbase/sweep.py`; Binance has older ones) are slow and excluded in `pytest.ini`; run them with `-o addopts=""`.
 - `@pytest.mark.asyncio` is required for async test functions.
 

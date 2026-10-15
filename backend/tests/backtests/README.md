@@ -46,7 +46,7 @@ Every backtest saves what it prints into `tests/backtests/reports/<exchange>/<te
 
 ## Parameter sweeps
 
-They run every config on each year of BTC-EUR (1h and 6h), then print one table per year and a summary of the net P&L of every config over all years. They take a few minutes, so `pytest.ini` excludes them; run them by clearing `addopts`:
+They run every config on each year of BTC-EUR (1h and 6h), then print one table per year and a summary of the net P&L of every config over all years. The moving average sweep then runs one continuous backtest over the whole period (also 1d), with the compounded return in % when the full capital is invested on each trade, for several fee levels (other exchanges / limit orders), next to buy & hold. They take a few minutes, so `pytest.ini` excludes them; run them by clearing `addopts`:
 
 ```bash
 pytest tests/backtests/coinbase/test_moving_avg_params_sweep.py -s -o addopts=""

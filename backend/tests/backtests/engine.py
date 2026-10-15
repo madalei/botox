@@ -67,3 +67,17 @@ def assert_alternating_sides(orders):
         assert orders[i].side != orders[i + 1].side, (
             f"Two consecutive {orders[i].side} orders at index {i} — position tracking broken"
         )
+
+
+def compounded_return_pct(orders, fee_rate: float) -> float:
+    """
+    Rendement en % si on investit tout le capital à chaque trade et qu'on réinvestit les gains.
+    Indépendant de la mise : comparable directement au rendement du buy & hold.
+    Chaque aller-retour multiplie le capital par (vente / achat) × (1 - fee_rate)², les frais étant payés des deux côtés.
+    """
+    capital = 1.0
+    buys = [o for o in orders if o.side == "BUY"]
+    sells = [o for o in orders if o.side == "SELL"]
+    for buy, sell in zip(buys, sells):
+        capital *= float(sell.price) / float(buy.price) * (1 - fee_rate) ** 2
+    return (capital - 1) * 100

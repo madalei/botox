@@ -27,7 +27,11 @@ class StrategyParams(BaseModel):
     long_window: int = Field(default=50, ge=1, description="Long moving average window")
     check_interval: int = Field(default=900, description="Interval in seconds between strategy ticks")
     stop_loss_pct: float = Field(default=0.02, gt=0, le=1, description="Stop loss percentage (0–1)")
-    take_profit_pct: float = Field(default=0.04, gt=0, le=1, description="Take profit percentage (0–1)")
+    take_profit_pct: float = Field(default=0.04, ge=0, le=1, description="Take profit percentage (0–1), 0 = no take profit")
+    trailing_stop_pct: float = Field(default=0.0, ge=0, lt=1, description="Trailing stop below the highest price since entry (0–1), 0 = disabled")
+    trend_window: int = Field(default=0, ge=0, description="Only buy above the moving average of this many candles (0 = no trend filter)")
+    buy_while_trend: bool = Field(default=False, description="Buy on any candle where short MA > long MA, not only on the crossover")
+    exit_on_crossover: bool = Field(default=True, description="Sell when the short MA crosses below the long MA")
 
 def get_bot_manager(request: Request):
     return request.app.state.bot_manager

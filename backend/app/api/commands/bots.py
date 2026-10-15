@@ -26,6 +26,7 @@ class StrategyParams(BaseModel):
     short_window: int = Field(default=20, ge=1, description="Short moving average window")
     long_window: int = Field(default=50, ge=1, description="Long moving average window")
     check_interval: int = Field(default=900, description="Interval in seconds between strategy ticks")
+    risk_per_trade: float = Field(default=0.01, gt=0, le=1, description="Part du solde disponible investie à chaque achat (0–1), ex. 0.02 = 2 %")
     stop_loss_pct: float = Field(default=0.02, gt=0, le=1, description="Stop loss percentage (0–1)")
     take_profit_pct: float = Field(default=0.04, ge=0, le=1, description="Take profit percentage (0–1), 0 = no take profit")
     trailing_stop_pct: float = Field(default=0.0, ge=0, lt=1, description="Trailing stop below the highest price since entry (0–1), 0 = disabled")

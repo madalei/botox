@@ -29,3 +29,10 @@ class MarketDataProviderInterface(ABC):
         Returns False when no more data is available.
         """
         pass
+
+    async def get_free_balance(self, currency: str) -> float | None:
+        """
+        Solde disponible (non bloqué dans un ordre) de la devise, ex. "EUR".
+        None = pas de solde réel (paper trading, backtest) : le bot utilise alors son capital fixe.
+        """
+        return None

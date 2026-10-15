@@ -85,7 +85,25 @@ async def test_paper_market_buy_with_live_coinbase_prices():
         await exchange.close()
 
 
-# --- Limite de 300 bougies ----------------------------------------------------------------------
+# --- Solde réel et limite de 300 bougies ----------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_paper_trading_has_no_real_balance():
+    # En paper trading, None : le bot utilise son capital fixe
+    exchange = build_adapter(sandbox=True)
+    exchange.client.fetch_balance = AsyncMock()
+
+    assert await exchange.get_free_balance("EUR") is None
+    exchange.client.fetch_balance.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_live_free_balance_reads_coinbase_account():
+    exchange = build_adapter(sandbox=False)
+    exchange.client.fetch_balance = AsyncMock(return_value={"free": {"EUR": 1234.5, "BTC": 0.01}})
+
+    assert await exchange.get_free_balance("EUR") == 1234.5
+
 
 @pytest.mark.asyncio
 async def test_get_history_asks_at_most_300_latest_candles():

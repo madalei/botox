@@ -63,6 +63,32 @@ async def test_failed_buy_restores_position_state():
     save_state.assert_not_called()
 
 
+@pytest.mark.asyncio
+async def test_position_is_sized_on_real_balance():
+    # Solde Coinbase de 500 EUR, 2 % par trade : achat de 10 EUR, et non 2 % du capital fixe de 1000
+    bot = ma_bot()
+    bot.strategy.risk_per_trade = 0.02
+    exchange = exchange_on_buy_candle()
+    exchange.get_free_balance = AsyncMock(return_value=500.0)
+
+    await bot.tick(exchange, order_service_returning("EXECUTED"))
+
+    exchange.get_free_balance.assert_awaited_once_with("EUR")
+    assert bot.strategy.get_state()["position_size"] * 100 == pytest.approx(10)
+
+
+@pytest.mark.asyncio
+async def test_balance_error_falls_back_to_fixed_capital():
+    bot = ma_bot()
+    exchange = exchange_on_buy_candle()
+    exchange.get_free_balance = AsyncMock(side_effect=Exception("Coinbase down"))
+
+    await bot.tick(exchange, order_service_returning("EXECUTED"))
+
+    # 1 % de 1000 EUR = 10 EUR à 100 EUR
+    assert bot.strategy.get_state()["position_size"] == pytest.approx(0.1)
+
+
 # --- Base de données ----------------------------------------------------------------------------------
 
 def test_bot_is_rebuilt_with_its_position_and_check_interval(test_db):

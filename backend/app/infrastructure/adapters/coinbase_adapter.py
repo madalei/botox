@@ -89,6 +89,16 @@ class CoinbaseAdapter(MarketDataProviderInterface):
         ticker = await self.client.fetch_ticker(symbol)
         return ticker["last"]
 
+    async def get_free_balance(self, currency: str) -> float | None:
+        """
+        Solde disponible sur le compte Coinbase, ex. get_free_balance("EUR").
+        En paper trading, None : les ordres sont simulés, le bot utilise son capital fixe.
+        """
+        if self.paper_trading:
+            return None
+        balance = await self.client.fetch_balance()
+        return float(balance.get("free", {}).get(currency) or 0.0)
+
     async def fetch_ohlcv(self, symbol: str, timeframe: str = "1m", since: int | None = None, limit: int = 30):
         """
         Fetch OHLCV candels and return: [timestamp, open, high, low, close, volume]

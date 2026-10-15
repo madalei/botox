@@ -13,6 +13,7 @@ class BaseBot:
     def __init__(self, bot_id: str, strategy, capital: float = 1000.0, check_interval: int = 900, save_state=None):
         self.bot_id = bot_id
         self.strategy = strategy
+        # Capital de secours : utilisé seulement quand le solde réel n'est pas disponible (paper trading, erreur API)
         self.capital = capital
         # save_state(bot_id, state) : sauvegarde l'état de la position en base (branché par BotManager)
         self.save_state = save_state
@@ -21,16 +22,31 @@ class BaseBot:
         self.status = BotStatus.CREATED
         self._task: asyncio.Task | None = None
 
+    async def get_capital(self, exchange) -> float:
+        """
+        Solde disponible dans la devise de cotation (EUR pour BTC/EUR) sur l'exchange.
+        Repli sur self.capital en paper trading ou si l'appel échoue : une vente (stop) ne doit jamais être bloquée
+        par une erreur de solde, et un achat trop gros pour le solde réel échoue simplement côté exchange.
+        """
+        quote_currency = self.strategy.symbol.split("/")[1]
+        try:
+            balance = await exchange.get_free_balance(quote_currency)
+        except Exception as e:
+            bot_logger.warning(f"Balance unavailable, using fixed capital {self.capital}: {e}", extra={"bot_id": self.bot_id})
+            return self.capital
+        return self.capital if balance is None else balance
+
     async def tick(self, exchange, order_service):
         """
         Execute a single strategy evaluation cycle.
         """
+        capital = await self.get_capital(exchange)
         # État avant la bougie : si l'ordre échoue sur l'exchange, on y revient (sinon le bot croirait
         # avoir acheté des BTC qu'il n'a pas, ou avoir vendu des BTC qu'il a encore)
         state_before = self.strategy.get_state()
 
         # Generate signal/order from strategy
-        order_signal = await self.strategy.generate_signals(exchange, self.capital)
+        order_signal = await self.strategy.generate_signals(exchange, capital)
 
         executed_order = None
         if not order_signal:

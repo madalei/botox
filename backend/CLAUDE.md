@@ -40,7 +40,7 @@ POST /bots → BotManager.start_bot() → BaseBot.run() [loop]
 
 **`app/main.py`** — FastAPI lifespan builds the exchange adapter with `create_exchange()` (`app/infrastructure/adapters/exchange_factory.py`, driven by `EXCHANGE`), then `OrderService`, and `BotManager` stored in `app.state`. All bots share these singletons.
 
-**`app/bots/base.py` (`BaseBot`)** — The trading loop. Each bot runs `tick()` every `check_interval` seconds (default 900s / 15min). `tick()` calls strategy → persists order → executes order. If the order FAILED on the exchange, the strategy state is rolled back; any state change is saved to `bots.state` through `save_state`.
+**`app/bots/base.py` (`BaseBot`)** — The trading loop. Each bot runs `tick()` every `check_interval` seconds (default 900s / 15min). `tick()` reads the free quote-currency balance (`exchange.get_free_balance`, falls back to the fixed `capital` in paper trading or on error) → calls strategy → persists order → executes order. If the order FAILED on the exchange, the strategy state is rolled back; any state change is saved to `bots.state` through `save_state`.
 
 **`app/bots/bot_manager.py` (`BotManager`)** — Registry of running bots (asyncio tasks). On startup (`restore_bots()` in the lifespan), bots with status `R` and a saved `state` are rebuilt by `build_bot_from_orm` with their open position and `check_interval` (stored in `params`). Bots without state (created before that column) are not auto-restarted, use `POST /bots/{id}/restart`. `POST /bots/{id}/stop` sets status `S` (an open position is not sold).
 
